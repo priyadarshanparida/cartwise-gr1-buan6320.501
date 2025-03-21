@@ -124,12 +124,12 @@ CREATE INDEX idx_description ON product(prod_descr);
 /* Query 2: search for products based on keywords in
  product name, description, or category name. */
 SELECT 
+    c.category_name
     p.prod_id,
     p.prod_name,
     p.prod_descr,
     p.price,
     p.stock_quantity,
-    c.category_name
 FROM 
     product p
 JOIN 
@@ -227,6 +227,54 @@ JOIN
 WHERE
     p.prod_id = 'product_id';
 
+-- Query 4: Get inventory details for a specific supplier
+SELECT 
+    i.inventory_id,
+    p.prod_name,
+    i.quantity AS stock_quantity,
+    i.location,
+    i.reorder_level
+FROM 
+    inventory i
+JOIN 
+    product p ON i.product_id = p.prod_id
+WHERE 
+    i.supplier_id = @supplier_id
+ORDER BY 
+    p.prod_name;
+
+-- Query 5: Get products below reorder level
+SELECT 
+    s.supplier_name,
+    p.prod_name,
+    i.quantity AS stock_quantity,
+    i.reorder_level
+FROM 
+    inventory i
+JOIN 
+    product p ON i.product_id = p.prod_id
+JOIN 
+    supplier s ON i.supplier_id = s.supplier_id
+WHERE 
+    i.quantity < i.reorder_level
+ORDER BY 
+    s.supplier_name, p.prod_name;
+
+-- Query 6: Get inventory summary by location
+SELECT 
+    i.location,
+    COUNT(i.inventory_id) AS total_products,
+    SUM(i.quantity) AS total_stock,
+    SUM(i.quantity * p.price) AS total_value
+FROM 
+    inventory i
+JOIN 
+    product p ON i.product_id = p.prod_id
+GROUP BY 
+    i.location
+ORDER BY 
+    total_value DESC;
+
 -- Module 4: Order Processing
 /* Table 7 - SHOPPING CART
 Purpose: Store shopping cart information for each customer to track selected products.
@@ -300,7 +348,7 @@ CREATE TABLE payment_detail (
 );
 
 /* Table 10 - ORDER DETAIL
-Purpose: Store order details for each product in an order to track quantities and prices.
+Purpose: Store order details for each item in an order to track quantities and prices.
 1. Order Detail ID (order_detail_id): Unique identifier for each order detail.
 2. Order ID (order_id): ID of the order to which the detail belongs.
 3. Product ID (product_id): ID of the product in the order.
@@ -389,7 +437,7 @@ CREATE TABLE shipping (
     FOREIGN KEY (order_detail_id) REFERENCES order_detail(order_detail_id)
 );
 
--- Query 4: Order Summary and Payment Details
+-- Query 7: Order Summary and Payment Details
 SELECT 
     CONCAT(c.fname, ' ', c.lname) AS customer_name,
     c.cid AS customer_id,
@@ -412,7 +460,7 @@ JOIN
 WHERE 
     os.order_id = @order_id;
 
--- Query 5: Display order details with product and shipping information
+-- Query 8: Display order details with product and shipping information
 SELECT 
     od.order_id,
     od.product_id,
@@ -433,7 +481,26 @@ JOIN
 WHERE 
     od.order_id = @order_id;
 
-/* Table 12 - RETURN
+-- Query 9: Get customer order history
+SELECT 
+    os.order_id,
+    os.order_date,
+    os.status,
+    os.total_amount,
+    pd.payment_method,
+    CONCAT('**** **** **** ', RIGHT(pd.account_number, 4)) AS masked_account_number,
+    pd.amount AS payment_amount,
+    pd.payment_date
+FROM 
+    order_summary os
+JOIN 
+    payment_detail pd ON os.order_id = pd.order_id
+WHERE 
+    os.customer_id = @customer_id
+ORDER BY 
+    os.order_date DESC;
+
+/* Table 12 - RETURN_REFUND
 Purpose: Store return information for tracking and processing product returns.
 1. Return ID (return_id): Unique identifier for each return record.
 2. Order ID (order_id): ID of the order for which the return is requested.
@@ -444,7 +511,7 @@ Purpose: Store return information for tracking and processing product returns.
 7. Created At (created_at): Timestamp of return request creation.
 8. Updated At (updated_at): Timestamp of last return update.
 */
-CREATE TABLE return (
+CREATE TABLE return_refund (
     return_id INT PRIMARY KEY AUTO_INCREMENT,
     order_id INT,
     product_id INT,
@@ -465,9 +532,11 @@ CREATE TABLE return (
 -- TODO Trigger: Update Order Status on Shipping
 -- TODO Trigger: Update Order Status on Delivery
 -- TODO Trigger: Update Order Status on Return
+-- TODO Trigger: Update Inventory on Order Placement
+-- TODO Trigger: Update Inventory on Order Cancellation
+-- TODO Trigger: Update Inventory on Return Approval
 
--- Module 5: 5. Customer Feedback
-
+-- Module 5: Customer Feedback
 /* Table 13 - PRODUCT_REVIEW
 Purpose: Store product reviews submitted by customers for feedback and ratings.
 1. Review ID (p_review_id): Unique identifier for each product review.
@@ -488,6 +557,22 @@ CREATE TABLE product_review (
     FOREIGN KEY (customer_id) REFERENCES customer(cid)
 );
 
+-- Query 10: Get top-rated products with the highest number of reviews
+SELECT 
+    p.prod_id,
+    p.prod_name,
+    AVG(pr.rating) AS avg_rating,
+    COUNT(pr.p_review_id) AS total_reviews
+FROM 
+    product p
+LEFT JOIN 
+    product_review pr ON p.prod_id = pr.product_id
+GROUP BY 
+    p.prod_id, p.prod_name
+ORDER BY 
+    avg_rating DESC, total_reviews DESC
+LIMIT 5;
+
 /* Table 14 - CUSTOMER_SERVICE
 1. Ticket ID (ticket_id): Unique identifier for each customer service ticket.
 2. Customer ID (customer_id): ID of the customer who raised the ticket.
@@ -505,6 +590,23 @@ CREATE TABLE customer_service (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customer(cid)
 );
+
+-- Query 11: Get unresolved customer service tickets
+SELECT 
+    cs.ticket_id,
+    cs.issue_description,
+    cs.status,
+    cs.created_at,
+    CONCAT(c.fname, ' ', c.lname) AS customer_name,
+    c.email AS customer_email
+FROM 
+    customer_service cs
+JOIN 
+    customer c ON cs.customer_id = c.cid
+WHERE 
+    cs.status = 'Open'
+ORDER BY 
+    cs.created_at ASC;
 
 /* Table 15 - CONTACT_SELLER
 1. Contact ID (contact_id): Unique identifier for each contact record.
@@ -542,3 +644,18 @@ CREATE TABLE seller_review (
     FOREIGN KEY (seller_id) REFERENCES supplier(supplier_id),
     FOREIGN KEY (customer_id) REFERENCES customer(cid)
 );
+
+-- Query 12: Get seller performance
+SELECT 
+    s.supplier_id,
+    s.supplier_name,
+    AVG(sr.rating) AS avg_rating,
+    COUNT(sr.s_review_id) AS total_reviews
+FROM 
+    supplier s
+LEFT JOIN 
+    seller_review sr ON s.supplier_id = sr.seller_id
+GROUP BY 
+    s.supplier_id, s.supplier_name
+ORDER BY 
+    avg_rating DESC, total_reviews DESC;
