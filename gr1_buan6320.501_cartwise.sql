@@ -1,5 +1,5 @@
--- Active: 1739724744769@@127.0.0.1@3306@cartwise
--- Create a database for the E-commerce company Cartwise
+
+-- Create a database for the E-commerce company "Cartwise Inc."
 CREATE DATABASE cartwise;
 -- DROP DATABASE IF EXISTS cartwise;
 USE cartwise;
@@ -27,7 +27,7 @@ CREATE TABLE customer (
     fname VARCHAR(50) NOT NULL,
     lname VARCHAR(50) NOT NULL,
     dob DATE,
-    gender ENUM('Male', 'Female', 'Other')
+    gender ENUM('Male', 'Female', 'Other'),
     email VARCHAR(100) UNIQUE NOT NULL,
     phone VARCHAR(15) NOT NULL,
     address_line1 VARCHAR(255) NOT NULL,
@@ -66,8 +66,8 @@ FROM
 JOIN 
     login l ON c.cid = l.cid
 WHERE 
-    c.email = 'user_email' 
-    AND l.password_hash = 'user_password_hash'
+    c.email = 'john.doe@example.com' 
+    AND l.password_hash = 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f'
     AND l.is_active = TRUE;
 
 -- Module 2. Product Onboarding
@@ -94,52 +94,54 @@ CREATE INDEX idx_category_name ON product_category(category_name);
 Purpose: Store product information for listing, searching, and ordering products.
 1. Product ID (prod_id): Unique identifier for each product.
 2. Product Name (prod_name): Name of the product.
-3. Description (prod_descr): Description of the product.
-4. Review (prod_review): Review rating of the product (e.g., 1 to 5).
-5. Price (price): Price of the product.
-6. Stock (stock): Available stock of the product.
-7. Category ID (category_id): ID of the product category.
-8. Inventory ID (inventory_id): ID of the inventory record.
+3. Brand (prod_brand): Brand of the product.
+4. Description (prod_descr): Description of the product.
+5. Review (prod_review): Review rating of the product (e.g., 1 to 5).
+6. Price (price): Price of the product.
+7. Stock (stock): Available stock of the product.
+8. Category ID (category_id): ID of the product category.
 9. Created At (created_at): Timestamp of product creation.
 10. Updated At (updated_at): Timestamp of last product update.
 */
 CREATE TABLE product (
     prod_id INT PRIMARY KEY AUTO_INCREMENT,
     prod_name VARCHAR(255) NOT NULL,
+    prod_brand VARCHAR(50),
     prod_descr TEXT,
     prod_review DECIMAL(2, 1),
     price DECIMAL(10, 2) NOT NULL,
     stock INT NOT NULL,
     category_id INT,
-    inventory_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (category_id) REFERENCES product_category(category_id),
-    FOREIGN KEY (inventory_id) REFERENCES inventory(inventory_id)
+    FOREIGN KEY (category_id) REFERENCES product_category(category_id)
 );
+
+-- TODO: Add seller field to the product table for tracking suppliers or is there a way to do this with supplier_id?
+
 -- Add indexes to the product table for improved search performance.
 CREATE INDEX idx_product_name ON product(prod_name);
-CREATE INDEX idx_description ON product(prod_descr);
+CREATE INDEX idx_description ON product(prod_descr(255));
 
 /* Query 2: search for products based on keywords in
  product name, description, or category name. */
 SELECT 
-    c.category_name
+    c.category_name,
     p.prod_id,
     p.prod_name,
     p.prod_descr,
     p.price,
-    p.stock_quantity,
+    p.stock
 FROM 
     product p
 JOIN 
     product_category c ON p.category_id = c.category_id
 WHERE 
-    p.prod_name LIKE '%search_term%' 
-    OR p.prod_descr LIKE '%search_term%' 
-    OR c.category_name LIKE '%search_term%';
+    p.prod_name LIKE '%Off-Road%' 
+    OR p.prod_descr LIKE '%Off-Road%'  
+    OR c.category_name LIKE '%Off-Road%';
 
--- Module 3: Inventory management
+-- Module 3: Inventory Management
 /* Table 5 - SUPPLIER
 Purpose: Store supplier information for managing relationships and inventory.
 1. Supplier ID (supplier_id): Unique identifier for each supplier.
@@ -225,7 +227,7 @@ FROM
 JOIN
     product p ON i.product_id = p.prod_id
 WHERE
-    p.prod_id = 'product_id';
+    p.prod_id = '1';
 
 -- Query 4: Get inventory details for a specific supplier
 SELECT 
@@ -239,7 +241,7 @@ FROM
 JOIN 
     product p ON i.product_id = p.prod_id
 WHERE 
-    i.supplier_id = @supplier_id
+    i.supplier_id = 1
 ORDER BY 
     p.prod_name;
 
@@ -301,7 +303,7 @@ Purpose: Store order summary information for tracking and managing customer orde
 2. Customer ID (customer_id): ID of the customer who placed the order.
 3. Order Date (order_date): Date and time of order placement.
 4. Total Amount (total_amount): Total amount of the order.
-5. Status (status): Current status of the order (e.g., failed payment, shipped, delivered).
+5. Status (order_status): Current status of the order (e.g., failed payment, shipped, delivered).
 6. Shipping Address (shipping_address): Address to which the order will be shipped.
 7. Billing Address (billing_address): Address to which the bill will be sent.
 8. Created At (created_at): Timestamp of order creation.
@@ -312,8 +314,9 @@ CREATE TABLE order_summary (
     customer_id INT,
     order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     total_amount DECIMAL(10, 2) NOT NULL,
-    status ENUM(
+    order_status ENUM(
             'Failed Payment',
+            'Received',
             'Processing', 
             'Shipped', 
             'Delivered', 
@@ -365,12 +368,38 @@ CREATE TABLE order_detail (
     FOREIGN KEY (product_id) REFERENCES product(prod_id)
 );
 
+/* Table 11 - SHIPPING
+Purpose: Store shipping information for each order to track delivery details and costs.
+TODO refactor to account for multiple shipments per order
+1. Shipping ID (shipping_id): Unique identifier for each shipping record.
+2. Order Detail ID (order_detail_id): ID of the order detail for which shipping is done.
+3. Shipping Method (shipping_method): Method used for shipping (e.g., standard, express).
+4. Shipping Cost (shipping_cost): Cost of shipping.
+5. Shipping Date (shipping_date): Date and time of shipping.
+6. Delivery Date (delivery_date): Expected delivery date.
+7. Tracking Number (tracking_number): Tracking number for the shipment.
+*/
+CREATE TABLE shipping (
+    shipping_id INT PRIMARY KEY AUTO_INCREMENT,
+    order_detail_id INT,
+    shipping_method VARCHAR(100),
+    shipping_cost DECIMAL(10, 2),
+    shipping_date TIMESTAMP,
+    delivery_date TIMESTAMP,
+    tracking_number VARCHAR(100),
+    FOREIGN KEY (order_detail_id) REFERENCES order_detail(order_detail_id)
+);
+
+-- TODO add algorithm to determine shipping cost?
+
 -- Function 1: Calculate Order Subtotal (total amount before taxes)
 DELIMITER //
 
 CREATE FUNCTION CalculateSubtotal(
     order_id INT
 ) RETURNS DECIMAL(10, 2)
+DETERMINISTIC
+READS SQL DATA
 BEGIN
     DECLARE subtotal DECIMAL(10, 2);
 
@@ -392,6 +421,8 @@ CREATE FUNCTION CalculateTotalAmount(
     order_id INT,
     tax_rate DECIMAL(5, 2)
 ) RETURNS DECIMAL(10, 2)
+DETERMINISTIC
+READS SQL DATA
 BEGIN
     DECLARE subtotal DECIMAL(10, 2);
     DECLARE shipping_cost DECIMAL(10, 2);
@@ -415,27 +446,8 @@ END //
 
 DELIMITER ;
 
-/* Table 11 - SHIPPING
-Purpose: Store shipping information for each order to track delivery details and costs.
-TODO refactor to account for multiple shipments per order
-1. Shipping ID (shipping_id): Unique identifier for each shipping record.
-2. Order Detail ID (order_detail_id): ID of the order detail for which shipping is done.
-3. Shipping Method (shipping_method): Method used for shipping (e.g., standard, express).
-4. Shipping Cost (shipping_cost): Cost of shipping.
-5. Shipping Date (shipping_date): Date and time of shipping.
-6. Delivery Date (delivery_date): Expected delivery date.
-7. Tracking Number (tracking_number): Tracking number for the shipment.
-*/
-CREATE TABLE shipping (
-    shipping_id INT PRIMARY KEY AUTO_INCREMENT,
-    order_detail_id INT,
-    shipping_method VARCHAR(100),
-    shipping_cost DECIMAL(10, 2),
-    shipping_date TIMESTAMP,
-    delivery_date TIMESTAMP,
-    tracking_number VARCHAR(100),
-    FOREIGN KEY (order_detail_id) REFERENCES order_detail(order_detail_id)
-);
+-- Test the CalculateTotalAmount function
+SELECT CalculateTotalAmount(1, 6.25) AS total_amount;
 
 -- Query 7: Order Summary and Payment Details
 SELECT 
@@ -443,7 +455,7 @@ SELECT
     c.cid AS customer_id,
     os.order_id,
     os.order_date,
-    os.status,
+    os.order_status,
     os.shipping_address,
     os.billing_address,
     os.total_amount,
@@ -458,7 +470,7 @@ JOIN
 JOIN 
     payment_detail pd ON os.order_id = pd.order_id
 WHERE 
-    os.order_id = @order_id;
+    os.order_id = 1;
 
 -- Query 8: Display order details with product and shipping information
 SELECT 
@@ -479,13 +491,13 @@ JOIN
 JOIN 
     shipping s ON od.order_detail_id = s.order_detail_id
 WHERE 
-    od.order_id = @order_id;
+    od.order_id = 1;
 
 -- Query 9: Get customer order history
 SELECT 
     os.order_id,
     os.order_date,
-    os.status,
+    os.order_status,
     os.total_amount,
     pd.payment_method,
     CONCAT('**** **** **** ', RIGHT(pd.account_number, 4)) AS masked_account_number,
@@ -496,14 +508,14 @@ FROM
 JOIN 
     payment_detail pd ON os.order_id = pd.order_id
 WHERE 
-    os.customer_id = @customer_id
+    os.customer_id = 1001
 ORDER BY 
     os.order_date DESC;
 
 /* Table 12 - RETURN_REFUND
 Purpose: Store return information for tracking and processing product returns.
 1. Return ID (return_id): Unique identifier for each return record.
-2. Order ID (order_id): ID of the order for which the return is requested.
+2. Order Detail ID (order_detail_id): ID of the ordered item for which the return is requested.
 3. Product ID (product_id): ID of the product being returned.
 4. Return Reason (return_reason): Reason for the return.
 5. Refund Amount (refund_amount): Amount to be refunded.
@@ -513,14 +525,14 @@ Purpose: Store return information for tracking and processing product returns.
 */
 CREATE TABLE return_refund (
     return_id INT PRIMARY KEY AUTO_INCREMENT,
-    order_id INT,
+    order_detail_id INT,
     product_id INT,
     return_reason VARCHAR(255),
     refund_amount DECIMAL(10, 2),
     status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (order_id) REFERENCES order_summary(order_id),
+    FOREIGN KEY (order_detail_id) REFERENCES order_detail(order_detail_id),
     FOREIGN KEY (product_id) REFERENCES product(prod_id)
 );
 
@@ -535,6 +547,7 @@ CREATE TABLE return_refund (
 -- TODO Trigger: Update Inventory on Order Placement
 -- TODO Trigger: Update Inventory on Order Cancellation
 -- TODO Trigger: Update Inventory on Return Approval
+-- TODO Trigger: Update product review in Product table on Product Review table update
 
 -- Module 5: Customer Feedback
 /* Table 13 - PRODUCT_REVIEW
@@ -556,6 +569,8 @@ CREATE TABLE product_review (
     FOREIGN KEY (product_id) REFERENCES product(prod_id),
     FOREIGN KEY (customer_id) REFERENCES customer(cid)
 );
+
+-- TODO Trigger: Update prod_review in PRODUCT table on PRODUCT_REVIEW table update
 
 -- Query 10: Get top-rated products with the highest number of reviews
 SELECT 
@@ -647,15 +662,17 @@ CREATE TABLE seller_review (
 
 -- Query 12: Get seller performance
 SELECT 
-    s.supplier_id,
-    s.supplier_name,
-    AVG(sr.rating) AS avg_rating,
+    s.supplier_id AS seller_id,
+    s.supplier_name AS seller_name,
+    ROUND(AVG(sr.rating), 1) AS avg_rating,
     COUNT(sr.s_review_id) AS total_reviews
 FROM 
     supplier s
-LEFT JOIN 
+JOIN 
     seller_review sr ON s.supplier_id = sr.seller_id
 GROUP BY 
     s.supplier_id, s.supplier_name
+HAVING 
+    total_reviews > 0
 ORDER BY 
     avg_rating DESC, total_reviews DESC;
