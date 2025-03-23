@@ -1,6 +1,6 @@
 
 -- Create a database for the E-commerce company "Cartwise Inc."
-CREATE DATABASE cartwise;
+CREATE DATABASE IF NOT EXISTS cartwise;
 -- DROP DATABASE IF EXISTS cartwise;
 USE cartwise;
 
@@ -117,7 +117,8 @@ CREATE TABLE product (
     FOREIGN KEY (category_id) REFERENCES product_category(category_id)
 );
 
--- TODO: Add seller field to the product table for tracking suppliers or is there a way to do this with supplier_id?
+/* TODO: Add seller field to the product table for tracking
+ suppliers or is there a way to do this with supplier_id? */
 
 -- Add indexes to the product table for improved search performance.
 CREATE INDEX idx_product_name ON product(prod_name);
@@ -390,6 +391,43 @@ CREATE TABLE shipping (
     FOREIGN KEY (order_detail_id) REFERENCES order_detail(order_detail_id)
 );
 
+/* Table 12 - RETURN_REFUND
+Purpose: Store return information for tracking and processing product returns.
+1. Return ID (return_id): Unique identifier for each return record.
+2. Order Detail ID (order_detail_id): ID of the ordered item for which the return is requested.
+3. Product ID (product_id): ID of the product being returned.
+4. Return Reason (return_reason): Reason for the return.
+5. Refund Amount (refund_amount): Amount to be refunded.
+6. Status (status): Status of the return (e.g., pending, approved, rejected).
+7. Created At (created_at): Timestamp of return request creation.
+8. Updated At (updated_at): Timestamp of last return update.
+*/
+CREATE TABLE return_refund (
+    return_id INT PRIMARY KEY AUTO_INCREMENT,
+    order_detail_id INT,
+    product_id INT,
+    return_reason VARCHAR(255),
+    refund_amount DECIMAL(10, 2),
+    status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_detail_id) REFERENCES order_detail(order_detail_id),
+    FOREIGN KEY (product_id) REFERENCES product(prod_id)
+);
+
+-- TODO Stored Procedure: Process Order
+-- TODO Stored Procedure: Process Return
+-- TODO Stored Procedure: Calculate and update shipping cost
+-- TODO Trigger: Update Order Status on Order Placement
+-- TODO Trigger: Update Order Status on Payment
+-- TODO Trigger: Update Order Status on Shipping
+-- TODO Trigger: Update Order Status on Delivery
+-- TODO Trigger: Update Order Status on Return
+-- TODO Trigger: Update Inventory on Order Placement
+-- TODO Trigger: Update Inventory on Order Cancellation
+-- TODO Trigger: Update Inventory on Return Approval
+-- TODO Trigger: Update product review in Product table on Product Review table update
+
 -- TODO add algorithm to determine shipping cost?
 
 -- Function 1: Calculate Order Subtotal (total amount before taxes)
@@ -512,43 +550,6 @@ WHERE
 ORDER BY 
     os.order_date DESC;
 
-/* Table 12 - RETURN_REFUND
-Purpose: Store return information for tracking and processing product returns.
-1. Return ID (return_id): Unique identifier for each return record.
-2. Order Detail ID (order_detail_id): ID of the ordered item for which the return is requested.
-3. Product ID (product_id): ID of the product being returned.
-4. Return Reason (return_reason): Reason for the return.
-5. Refund Amount (refund_amount): Amount to be refunded.
-6. Status (status): Status of the return (e.g., pending, approved, rejected).
-7. Created At (created_at): Timestamp of return request creation.
-8. Updated At (updated_at): Timestamp of last return update.
-*/
-CREATE TABLE return_refund (
-    return_id INT PRIMARY KEY AUTO_INCREMENT,
-    order_detail_id INT,
-    product_id INT,
-    return_reason VARCHAR(255),
-    refund_amount DECIMAL(10, 2),
-    status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (order_detail_id) REFERENCES order_detail(order_detail_id),
-    FOREIGN KEY (product_id) REFERENCES product(prod_id)
-);
-
--- TODO Stored Procedure: Process Order
--- TODO Stored Procedure: Process Return
--- TODO Stored Procedure: Calculate and update shipping cost
--- TODO Trigger: Update Order Status on Order Placement
--- TODO Trigger: Update Order Status on Payment
--- TODO Trigger: Update Order Status on Shipping
--- TODO Trigger: Update Order Status on Delivery
--- TODO Trigger: Update Order Status on Return
--- TODO Trigger: Update Inventory on Order Placement
--- TODO Trigger: Update Inventory on Order Cancellation
--- TODO Trigger: Update Inventory on Return Approval
--- TODO Trigger: Update product review in Product table on Product Review table update
-
 -- Module 5: Customer Feedback
 /* Table 13 - PRODUCT_REVIEW
 Purpose: Store product reviews submitted by customers for feedback and ratings.
@@ -570,24 +571,6 @@ CREATE TABLE product_review (
     FOREIGN KEY (customer_id) REFERENCES customer(cid)
 );
 
--- TODO Trigger: Update prod_review in PRODUCT table on PRODUCT_REVIEW table update
-
--- Query 10: Get top-rated products with the highest number of reviews
-SELECT 
-    p.prod_id,
-    p.prod_name,
-    AVG(pr.rating) AS avg_rating,
-    COUNT(pr.p_review_id) AS total_reviews
-FROM 
-    product p
-LEFT JOIN 
-    product_review pr ON p.prod_id = pr.product_id
-GROUP BY 
-    p.prod_id, p.prod_name
-ORDER BY 
-    avg_rating DESC, total_reviews DESC
-LIMIT 5;
-
 /* Table 14 - CUSTOMER_SERVICE
 1. Ticket ID (ticket_id): Unique identifier for each customer service ticket.
 2. Customer ID (customer_id): ID of the customer who raised the ticket.
@@ -605,23 +588,6 @@ CREATE TABLE customer_service (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customer(cid)
 );
-
--- Query 11: Get unresolved customer service tickets
-SELECT 
-    cs.ticket_id,
-    cs.issue_description,
-    cs.status,
-    cs.created_at,
-    CONCAT(c.fname, ' ', c.lname) AS customer_name,
-    c.email AS customer_email
-FROM 
-    customer_service cs
-JOIN 
-    customer c ON cs.customer_id = c.cid
-WHERE 
-    cs.status = 'Open'
-ORDER BY 
-    cs.created_at ASC;
 
 /* Table 15 - CONTACT_SELLER
 1. Contact ID (contact_id): Unique identifier for each contact record.
@@ -659,6 +625,41 @@ CREATE TABLE seller_review (
     FOREIGN KEY (seller_id) REFERENCES supplier(supplier_id),
     FOREIGN KEY (customer_id) REFERENCES customer(cid)
 );
+
+-- TODO Trigger: Update prod_review in PRODUCT table on PRODUCT_REVIEW table update
+
+-- Query 10: Get top-rated products with the highest number of reviews
+SELECT 
+    p.prod_id,
+    p.prod_name,
+    AVG(pr.rating) AS avg_rating,
+    COUNT(pr.p_review_id) AS total_reviews
+FROM 
+    product p
+LEFT JOIN 
+    product_review pr ON p.prod_id = pr.product_id
+GROUP BY 
+    p.prod_id, p.prod_name
+ORDER BY 
+    avg_rating DESC, total_reviews DESC
+LIMIT 5;
+
+-- Query 11: Get unresolved customer service tickets
+SELECT 
+    cs.ticket_id,
+    cs.issue_description,
+    cs.status,
+    cs.created_at,
+    CONCAT(c.fname, ' ', c.lname) AS customer_name,
+    c.email AS customer_email
+FROM 
+    customer_service cs
+JOIN 
+    customer c ON cs.customer_id = c.cid
+WHERE 
+    cs.status = 'Open'
+ORDER BY 
+    cs.created_at ASC;
 
 -- Query 12: Get seller performance
 SELECT 
