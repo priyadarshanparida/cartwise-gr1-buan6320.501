@@ -70,6 +70,12 @@ INSERT INTO order_summary (customer_id, order_date, total_amount, order_status, 
 -- Ordered Items: 1 Canon EOS R5
 INSERT INTO order_summary (customer_id, order_date, total_amount, order_status, shipping_address, billing_address) VALUES
 (1010, '2025-03-20 19:00:00', 4223.43, 'Received', '444 Cypress St, Allen, TX 75013', '444 Cypress St, Allen, TX 75013');
+
+-- Order 11: Subtotal = $1000.00, Shipping = $50.00, Taxes = $39.38
+-- Ordered Items: 2 iPhone 14, 1 Zara Summer Dress
+INSERT INTO order_summary (customer_id, order_date, total_amount, order_status, shipping_address, billing_address) VALUES
+(1001, '2024-12-15 10:00:00', 1089.38, 'Delivered', '123 Main St, Dallas, TX 75201', '123 Main St, Dallas, TX 75201');
+
 SELECT * FROM order_summary;
 
 -- Insert 9: Insert records into the payment_detail table
@@ -123,6 +129,11 @@ INSERT INTO payment_detail (order_id, payment_method, account_number, amount, pa
 -- Paid fully with Credit Card
 INSERT INTO payment_detail (order_id, payment_method, account_number, amount, payment_date) VALUES
 (10, 'Credit Card', '4222222222222222', 4223.43, '2025-03-20 19:05:00');
+
+-- Order 11: Total = $1089.38
+-- Paid fully with Credit Card
+INSERT INTO payment_detail (order_id, payment_method, account_number, amount, payment_date) VALUES
+(11, 'Credit Card', '4111111111111111', 1089.38, '2024-12-15 10:05:00');
 
 SELECT * FROM payment_detail;
 
@@ -178,6 +189,11 @@ INSERT INTO order_detail (order_id, product_id, quantity, price) VALUES
 INSERT INTO order_detail (order_id, product_id, quantity, price) VALUES
 (10, 11, 1, 3899.99); -- 1 unit of Canon EOS R5
 
+-- Order 11
+INSERT INTO order_detail (order_id, product_id, quantity, price) VALUES
+(11, 1, 1, 999.99),  -- 1 unit of iPhone 14
+(11, 81, 2, 6.99);   -- 2 units of Pantene Pro-V Shampoo
+
 SELECT * FROM order_detail;
 
 -- Insert 11: Insert records into the shipping table
@@ -232,12 +248,18 @@ INSERT INTO shipping (order_detail_id, shipping_method, shipping_cost, shipping_
 INSERT INTO shipping (order_detail_id, shipping_method, shipping_cost, shipping_date, delivery_date, tracking_number) VALUES
 (21, 'Express', 75.00, '2025-03-20 19:10:00', '2025-03-22 19:00:00', 'TRACK102345'); -- Canon EOS R5
 
+-- Order 11: Total Shipping = $10.00
+INSERT INTO shipping (order_detail_id, shipping_method, shipping_cost, shipping_date, delivery_date, tracking_number) VALUES
+(22, 'Standard', 7.00, '2024-12-15 11:00:00', '2024-12-20 10:00:00', 'TRACK112345'); -- iPhone 14
+INSERT INTO shipping (order_detail_id, shipping_method, shipping_cost, shipping_date, delivery_date, tracking_number) VALUES
+(23, 'Standard', 3.00, '2024-12-15 11:00:00', '2024-12-20 10:00:00', 'TRACK112346'); -- Pantene Pro-V Shampoo
+
 SELECT * FROM shipping;
 
 
 -- Insert 12: Insert records into the return_refund table
 -- This is incomplete for now. TODO implement triggers to sync other tables.
 INSERT INTO return_refund (order_detail_id, product_id, return_reason, refund_amount, status) VALUES
-(1, 1, 'Defective product', 999.99, 'Pending'); -- Returning 1 iPhone 14
+(12, 36, 'Defective product', CalculateRefund(36, 1, 6.5), 'Pending'); -- Returning 1 Ikea Malm Bed Frame
 
 SELECT * FROM return_refund;

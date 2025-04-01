@@ -1,4 +1,3 @@
-
 -- Create a database for the E-commerce company "Cartwise Inc."
 CREATE DATABASE IF NOT EXISTS cartwise;
 USE cartwise;
@@ -668,7 +667,7 @@ SELECT * FROM inventory;
 SELECT 
     i.inventory_id,
     p.prod_name,
-    i.quantity,
+    i.quantity AS stock,
     i.location,
     i.reorder_level
 FROM
@@ -682,6 +681,8 @@ WHERE
 @Author: Sunayana Jana
 */
 SELECT 
+    i.supplier_id,
+    s.supplier_name,
     i.inventory_id,
     p.prod_name,
     i.quantity AS stock_quantity,
@@ -691,11 +692,14 @@ FROM
     inventory i
 JOIN 
     product p ON i.product_id = p.prod_id
+JOIN
+    supplier s ON i.supplier_id = s.supplier_id
 WHERE 
     i.supplier_id = 1
 ORDER BY 
     p.prod_name;
 
+-- TODO: Implement this by location
 /* Query 5: Get products below reorder level
 @Author: Winnie Manyara
 */
@@ -720,6 +724,8 @@ ORDER BY
 */
 SELECT 
     i.location,
+    p.prod_id,
+    p.prod_name,
     COUNT(i.inventory_id) AS total_products,
     SUM(i.quantity) AS total_stock,
     SUM(i.quantity * p.price) AS total_value
@@ -728,9 +734,7 @@ FROM
 JOIN 
     product p ON i.product_id = p.prod_id
 GROUP BY 
-    i.location
-ORDER BY 
-    total_value DESC;
+    i.location, p.prod_id, p.prod_name;
 
 -- Module 4: Order Processing
 /* Table 7 - SHOPPING CART
@@ -777,9 +781,7 @@ CREATE TABLE order_summary (
             'Processing', 
             'Shipped', 
             'Delivered', 
-            'Cancelled',
-            'Return Initiated',
-            'Refunded'
+            'Cancelled'
         ) NOT NULL,
     shipping_address VARCHAR(255),
     billing_address VARCHAR(255),
@@ -878,6 +880,7 @@ CREATE TABLE return_refund (
 -- TODO Stored Procedure: Process Order
 -- TODO Stored Procedure: Process Return
 -- TODO Stored Procedure: Calculate and update shipping cost
+-- TODO Trigger: Remove the products from shopping cart after order placement
 -- TODO Trigger: Update Order Status on Order Placement
 -- TODO Trigger: Update Order Status on Payment
 -- TODO Trigger: Update Order Status on Shipping
@@ -891,9 +894,15 @@ CREATE TABLE return_refund (
 /* Insert 7: Insert records into the shopping_cart table
 @Author: Priyadarshan Parida
 */
+
 INSERT INTO shopping_cart (customer_id, product_id, quantity) VALUES
 (1001, 1, 2),  -- Customer 1 adds 2 units of iPhone 14
 (1001, 6, 1),  -- Customer 1 adds 1 unit of MacBook Pro 16"
+(1001, 81, 5),  -- Customer 1 adds 5 units of Pantene Pro-V Shampoo
+(1001, 76, 3),  -- Customer 1 adds 3 units of CeraVe Moisturizing Cream
+(1001, 46, 2),  -- Customer 1 adds 2 units of Levi’s 501 Jeans
+(1001, 51, 2),  -- Customer 1 adds 2 units of Zara Summer Dress
+(1001, 150, 4),  -- Customer 1 adds 4 units of Body Lotion
 (1002, 2, 1),  -- Customer 2 adds 1 unit of Samsung Galaxy S23
 (1002, 11, 1), -- Customer 2 adds 1 unit of Canon EOS R5
 (1003, 16, 1), -- Customer 3 adds 1 unit of LG InstaView Refrigerator
@@ -908,6 +917,26 @@ INSERT INTO shopping_cart (customer_id, product_id, quantity) VALUES
 (1007, 141, 1), -- Customer 7 adds 1 unit of Blood Pressure Monitor
 (1008, 150, 4); -- Customer 8 adds 4 units of Body Lotion
 SELECT * FROM shopping_cart;
+
+/* Query 7: Get shopping cart details for a specific customer
+ @Author: Priyadarshan Parida
+*/
+SELECT
+    sc.cart_id,
+    c.cid,
+    p.prod_id,
+    p.prod_name,
+    sc.quantity
+FROM
+    shopping_cart sc
+JOIN
+    customer c ON sc.customer_id = c.cid
+JOIN
+    product p ON sc.product_id = p.prod_id
+WHERE
+    c.cid = 1001
+ORDER BY
+    sc.cart_id;
 
 /* Insert 8: Insert records into the order_summary table
 @Author: Priyadarshan Parida
@@ -961,6 +990,12 @@ INSERT INTO order_summary (customer_id, order_date, total_amount, order_status, 
 -- Ordered Items: 1 Canon EOS R5
 INSERT INTO order_summary (customer_id, order_date, total_amount, order_status, shipping_address, billing_address) VALUES
 (1010, '2025-03-20 19:00:00', 4223.43, 'Received', '444 Cypress St, Allen, TX 75013', '444 Cypress St, Allen, TX 75013');
+
+-- Order 11: Subtotal = $1000.00, Shipping = $50.00, Taxes = $39.38
+-- Ordered Items: 2 iPhone 14, 1 Zara Summer Dress
+INSERT INTO order_summary (customer_id, order_date, total_amount, order_status, shipping_address, billing_address) VALUES
+(1001, '2024-12-15 10:00:00', 1089.38, 'Delivered', '123 Main St, Dallas, TX 75201', '123 Main St, Dallas, TX 75201');
+
 SELECT * FROM order_summary;
 
 /* Insert 9: Insert records into the payment_detail table
@@ -1016,6 +1051,11 @@ INSERT INTO payment_detail (order_id, payment_method, account_number, amount, pa
 -- Paid fully with Credit Card
 INSERT INTO payment_detail (order_id, payment_method, account_number, amount, payment_date) VALUES
 (10, 'Credit Card', '4222222222222222', 4223.43, '2025-03-20 19:05:00');
+
+-- Order 11: Total = $1089.38
+-- Paid fully with Credit Card
+INSERT INTO payment_detail (order_id, payment_method, account_number, amount, payment_date) VALUES
+(11, 'Credit Card', '4111111111111111', 1089.38, '2024-12-15 10:05:00');
 
 SELECT * FROM payment_detail;
 
@@ -1073,6 +1113,11 @@ INSERT INTO order_detail (order_id, product_id, quantity, price) VALUES
 INSERT INTO order_detail (order_id, product_id, quantity, price) VALUES
 (10, 11, 1, 3899.99); -- 1 unit of Canon EOS R5
 
+-- Order 11
+INSERT INTO order_detail (order_id, product_id, quantity, price) VALUES
+(11, 1, 1, 999.99),  -- 1 unit of iPhone 14
+(11, 81, 2, 6.99);   -- 2 units of Pantene Pro-V Shampoo
+
 SELECT * FROM order_detail;
 
 /* Insert 11: Insert records into the shipping table
@@ -1129,6 +1174,12 @@ INSERT INTO shipping (order_detail_id, shipping_method, shipping_cost, shipping_
 INSERT INTO shipping (order_detail_id, shipping_method, shipping_cost, shipping_date, delivery_date, tracking_number) VALUES
 (21, 'Express', 75.00, '2025-03-20 19:10:00', '2025-03-22 19:00:00', 'TRACK102345'); -- Canon EOS R5
 
+-- Order 11: Total Shipping = $10.00
+INSERT INTO shipping (order_detail_id, shipping_method, shipping_cost, shipping_date, delivery_date, tracking_number) VALUES
+(22, 'Standard', 7.00, '2024-12-15 11:00:00', '2024-12-20 10:00:00', 'TRACK112345'); -- iPhone 14
+INSERT INTO shipping (order_detail_id, shipping_method, shipping_cost, shipping_date, delivery_date, tracking_number) VALUES
+(23, 'Standard', 3.00, '2024-12-15 11:00:00', '2024-12-20 10:00:00', 'TRACK112346'); -- Pantene Pro-V Shampoo
+
 SELECT * FROM shipping;
 
 
@@ -1137,7 +1188,7 @@ SELECT * FROM shipping;
 */
 -- This is incomplete for now. TODO implement triggers to sync other tables.
 INSERT INTO return_refund (order_detail_id, product_id, return_reason, refund_amount, status) VALUES
-(1, 1, 'Defective product', 999.99, 'Pending'); -- Returning 1 iPhone 14
+(12, 36, 'Defective product', CalculateRefund(36, 1, 6.5), 'Pending'); -- Returning 1 Ikea Malm Bed Frame
 
 SELECT * FROM return_refund;
 
@@ -1201,11 +1252,38 @@ END //
 
 DELIMITER ;
 
+/* Function 3: Calculate refund amount
+@Author: Priyadarshan Parida
+*/
+DELIMITER //
+
+CREATE FUNCTION CalculateRefund(
+    p_pid INT,
+    p_qty INT,
+    p_tax_rate DECIMAL(5, 2)
+) RETURNS DECIMAL(10, 2)
+DETERMINISTIC
+BEGIN
+    DECLARE v_refund DECIMAL(10, 2);
+    DECLARE v_price DECIMAL(10, 2);
+
+    SELECT price
+    INTO v_price
+    FROM product
+    WHERE prod_id = p_pid;
+
+    -- Calculate the refund amount
+    SET v_refund = (v_price * p_qty) * (1 + p_tax_rate / 100);
+    RETURN v_refund;
+END //
+
+DELIMITER ;
+
 -- Test the CalculateTotalAmount function
 SELECT CalculateTotalAmount(1, 6.25) AS total_amount;
 
-/* Query 7: Order Summary and Payment Details
-@Author: Priyadarshan Parida
+/* Query 8: Order Summary and Payment Details
+ @Author: Priyadarshan Parida
 */
 SELECT 
     CONCAT(c.fname, ' ', c.lname) AS customer_name,
@@ -1229,22 +1307,28 @@ JOIN
 WHERE 
     os.order_id = 1;
 
-/* Query 8: Display order details with product and shipping information
-@Author: Priyadarshan Parida
+/* Query 9: Display order details with product and shipping information
+ @Author: Priyadarshan Parida
 */
-SELECT 
-    od.order_id,
+SELECT
+    CONCAT(c.fname, ' ', c.lname) AS customer_name,
+    c.cid,
+    os.order_id,
+    od.order_detail_id,
     od.product_id,
     p.prod_name,
     od.quantity,
     od.price,
     s.shipping_method,
     s.shipping_cost,
-    s.shipping_date,
-    s.delivery_date,
+    CAST(s.delivery_date AS DATE) AS expected_delivery_date,
     s.tracking_number
-FROM 
-    order_detail od
+FROM
+    customer c
+JOIN
+    order_summary os ON c.cid = os.customer_id
+JOIN 
+    order_detail od ON os.order_id = od.order_id
 JOIN 
     product p ON od.product_id = p.prod_id
 JOIN 
@@ -1252,7 +1336,35 @@ JOIN
 WHERE 
     od.order_id = 1;
 
-/* Query 9: Get customer order history
+/* Query 10: Display return history for customer
+ @Author: Priyadarshan Parida
+*/
+SELECT
+    c.cid,
+    CONCAT(c.fname, ' ', c.lname) AS customer_name,
+    os.order_id,
+    od.order_detail_id,
+    p.prod_id,
+    p.prod_name,
+    p.price,
+    od.quantity,
+    r.refund_amount,
+    r.return_reason,
+    r.status AS return_status
+FROM
+    customer c
+JOIN
+    order_summary os ON c.cid = os.customer_id
+JOIN
+    order_detail od ON os.order_id = od.order_id
+JOIN
+    product p ON od.product_id = p.prod_id
+JOIN
+    return_refund r ON od.order_detail_id = r.order_detail_id
+WHERE
+    c.cid = 1004;
+
+/* Query 11: Get customer order history
 @Author: Qurrat Ul Ain
 */
 SELECT 
@@ -1299,36 +1411,50 @@ CREATE TABLE product_review (
 @Author: Qurrat Ul Ain
 1. Ticket ID (ticket_id): Unique identifier for each customer service ticket.
 2. Customer ID (customer_id): ID of the customer who raised the ticket.
-3. Issue Description (issue_description): Description of the issue.
-4. Status (status): Status of the ticket (e.g., open, resolved, closed).
-5. Created At (created_at): Timestamp of when the ticket was created.
-6. Updated At (updated_at): Timestamp of the last update to the ticket.
+3. Order Detail ID (order_detail_id): ID of the order detail related to the issue.
+4. Issue Type (issue_type): Type of issue (e.g., Product Issue, Order Issue, Payment Issue, Shipping Issue, Other).
+5. Issue Description (issue_description): Description of the issue.
+6. Conversation (conversation): Conversation history related to the issue.
+7. Status (status): Status of the ticket (e.g., Open, Resolved, Closed).
+8. Created At (created_at): Timestamp of when the ticket was created.
+9. Updated At (updated_at): Timestamp of the last update to the ticket.
 */
+
 CREATE TABLE customer_service (
     ticket_id INT PRIMARY KEY AUTO_INCREMENT,
     customer_id INT,
+    order_detail_id INT,
+    issue_type ENUM('Product Issue', 'Order Issue', 'Payment Issue', 'Shipping Issue', 'Other'),
     issue_description TEXT,
+    conversation TEXT,
     status ENUM('Open', 'Resolved', 'Closed') DEFAULT 'Open',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES customer(cid)
+    FOREIGN KEY (customer_id) REFERENCES customer(cid),
+    FOREIGN KEY (order_detail_id) REFERENCES order_detail(order_detail_id)
 );
 
 /* Table 15 - CONTACT_SELLER
 @Author: Sai Vishnu Malladi
-1. Contact ID (contact_id): Unique identifier for each contact record.
+Purpose: Store customer-seller communication for inquiries and issues.
+1. Issue ID (issue_id): Unique identifier for each contact record.
 2. Customer ID (customer_id): ID of the customer who contacted the seller.
-3. Seller ID (seller_id): ID of the seller being contacted.
-4. Message (message): Message sent by the customer.
-5. Created At (created_at): Timestamp of when the message was sent.
+3. Order Detail ID (order_detail_id): ID of the order detail related to the issue.
+4. Contact Reason (contact_reason): Reason for contacting the seller (e.g., Product Inquiry, Warranty Inquiry, Price Inquiry, Delivery Inquiry, Other).
+5. Seller ID (seller_id): ID of the seller being contacted.
+6. Conversation (conversation): Conversation history between the customer and the seller.
+7. Created At (created_at): Timestamp of when the message was sent.
 */
 CREATE TABLE contact_seller (
     issue_id INT PRIMARY KEY AUTO_INCREMENT,
     customer_id INT,
+    order_detail_id INT,
+    contact_reason ENUM('Product Inquiry', 'Warranty Inquiry', 'Price Inquiry', 'Delivery Inquiry', 'Other'),
     seller_id INT,
-    message TEXT,
+    conversation TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customer(cid),
+    FOREIGN KEY (order_detail_id) REFERENCES order_detail(order_detail_id),
     FOREIGN KEY (seller_id) REFERENCES supplier(supplier_id)
 );
 
@@ -1379,6 +1505,38 @@ INSERT INTO product_review (product_id, customer_id, rating, review_text) VALUES
 (6, 1003, 5, 'Build quality is excellent.'),
 (6, 1004, 4, 'Very expensive but worth it.'),
 (6, 1005, 5, 'Best laptop I have ever used.');
+
+-- Product 7: Dell XPS 13 (prod_review = 4.6)
+INSERT INTO product_review (product_id, customer_id, rating, review_text) VALUES
+(7, 1001, 5, 'Great laptop for everyday use.'),
+(7, 1002, 4, 'Good performance but a bit heavy.'),
+(7, 1003, 5, 'The display is fantastic.'),
+(7, 1004, 4, 'Battery life could be better.'),
+(7, 1005, 5, 'Highly recommend this laptop.');
+
+-- Product 8: HP Spectre x360 (prod_review = 4.2)
+INSERT INTO product_review (product_id, customer_id, rating, review_text) VALUES
+(8, 1006, 4, 'Good laptop but a bit pricey.'),
+(8, 1007, 5, 'The design is beautiful.'),
+(8, 1008, 4, 'Performance is decent.'),
+(8, 1009, 5, 'Great for students.'),
+(8, 1010, 4, 'Battery life is average.');
+
+-- Product 9: Lenovo ThinkPad X1 Carbon (prod_review = 4.1)
+INSERT INTO product_review (product_id, customer_id, rating, review_text) VALUES
+(9, 1001, 4, 'Good laptop for business use.'),
+(9, 1002, 5, 'The keyboard is excellent.'),
+(9, 1003, 4, 'Performance is good but a bit heavy.'),
+(9, 1004, 5, 'Highly durable and reliable.'),
+(9, 1005, 4, 'Battery life could be improved.');
+
+-- Product 10: Asus ROG Zephyrus G14 (prod_review = 4.4)
+INSERT INTO product_review (product_id, customer_id, rating, review_text) VALUES
+(10, 1006, 5, 'Great gaming laptop.'),
+(10, 1007, 4, 'Performance is top-notch.'),
+(10, 1008, 5, 'The design is sleek.'),
+(10, 1009, 4, 'Battery life could be better.'),
+(10, 1010, 5, 'Highly recommend for gamers.');
 
 -- Product 11: Canon EOS R5 (prod_review = 4.9)
 INSERT INTO product_review (product_id, customer_id, rating, review_text) VALUES
@@ -1441,34 +1599,34 @@ SELECT * FROM product_review;
 /* Insert 14: Insert records into the customer_service table
 @Author: Qurrat Ul Ain
 */
-INSERT INTO customer_service (customer_id, issue_description, status, created_at, updated_at) VALUES
-(1001, 'Order not delivered on time.', 'Open', '2025-03-15 10:00:00', '2025-03-15 10:00:00'),
-(1002, 'Received a defective product.', 'Resolved', '2025-03-10 12:00:00', '2025-03-12 14:00:00'),
-(1003, 'Refund not processed for returned item.', 'Open', '2025-03-18 09:30:00', '2025-03-18 09:30:00'),
-(1004, 'Incorrect item delivered.', 'Closed', '2025-03-05 11:00:00', '2025-03-07 16:00:00'),
-(1005, 'Unable to apply discount code during checkout.', 'Resolved', '2025-03-08 08:00:00', '2025-03-09 10:00:00'),
-(1006, 'Payment failed but amount deducted.', 'Open', '2025-03-20 14:00:00', '2025-03-20 14:00:00'),
-(1007, 'Need assistance with product installation.', 'Open', '2025-03-19 15:30:00', '2025-03-19 15:30:00'),
-(1008, 'Order canceled without notification.', 'Closed', '2025-03-01 13:00:00', '2025-03-03 17:00:00'),
-(1009, 'Warranty claim for a damaged product.', 'Resolved', '2025-03-11 10:00:00', '2025-03-13 12:00:00'),
-(1010, 'Request to change shipping address.', 'Open', '2025-03-21 09:00:00', '2025-03-21 09:00:00');
+INSERT INTO customer_service (customer_id, order_detail_id, issue_type, issue_description, conversation, status, created_at, updated_at) VALUES
+(1001, 1, 'Shipping Issue', 'Order not delivered on time.', 'Customer: When will my order arrive?\nSupport: We are looking into it.', 'Open', '2025-03-15 10:00:00', '2025-03-15 10:00:00'),
+(1002, 7, 'Product Issue', 'Received a defective product.', 'Customer: The product is not working.\nSupport: We will replace it.', 'Resolved', '2025-03-10 12:00:00', '2025-03-12 14:00:00'),
+(1003, 9, 'Payment Issue', 'Refund not processed for returned item.', 'Customer: I returned the item but no refund yet.\nSupport: Refund will be processed soon.', 'Open', '2025-03-18 09:30:00', '2025-03-18 09:30:00'),
+(1004, 11, 'Order Issue', 'Incorrect item delivered.', 'Customer: I received the wrong item.\nSupport: We will arrange a replacement.', 'Closed', '2025-03-05 11:00:00', '2025-03-07 16:00:00'),
+(1005, 13, 'Order Issue', 'Unable to apply discount code during checkout.', 'Customer: Discount code is not working.\nSupport: Please try again, it should work now.', 'Resolved', '2025-03-08 08:00:00', '2025-03-09 10:00:00'),
+(1006, 15, 'Payment Issue', 'Payment failed but amount deducted.', 'Customer: My payment failed but money was deducted.\nSupport: We are investigating the issue.', 'Open', '2025-03-20 14:00:00', '2025-03-20 14:00:00'),
+(1007, 17, 'Product Issue', 'Need assistance with product installation.', 'Customer: How do I install this product?\nSupport: We will send you the installation guide.', 'Open', '2025-03-19 15:30:00', '2025-03-19 15:30:00'),
+(1008, 19, 'Order Issue', 'Order canceled without notification.', 'Customer: Why was my order canceled?\nSupport: Apologies, it was a system error.', 'Closed', '2025-03-01 13:00:00', '2025-03-03 17:00:00'),
+(1009, 20, 'Product Issue', 'Warranty claim for a damaged product.', 'Customer: My product is damaged, how do I claim warranty?\nSupport: Please provide the purchase details.', 'Resolved', '2025-03-11 10:00:00', '2025-03-13 12:00:00'),
+(1010, 21, 'Shipping Issue', 'Request to change shipping address.', 'Customer: I need to update my shipping address.\nSupport: Address updated successfully.', 'Open', '2025-03-21 09:00:00', '2025-03-21 09:00:00');
 
 SELECT * FROM customer_service;
 
 /* Insert 15: Insert records into the contact_seller table
 @Author: Sai Vishnu Malladi
 */
-INSERT INTO contact_seller (customer_id, seller_id, message, created_at) VALUES
-(1001, 1, 'I would like to know if the iPhone 14 is available in other colors.', '2025-03-15 10:00:00'),
-(1002, 2, 'Can you provide more details about the warranty for the LG InstaView Refrigerator?', '2025-03-16 12:30:00'),
-(1003, 3, 'Is there a discount available for bulk purchases of Ikea Ektorp Sofa?', '2025-03-17 09:45:00'),
-(1004, 4, 'I need assistance with the size chart for Zara Summer Dress.', '2025-03-18 14:20:00'),
-(1005, 5, 'Can you confirm the delivery timeline for the Peloton Bike?', '2025-03-19 11:15:00'),
-(1006, 6, 'Is the CeraVe Moisturizing Cream suitable for sensitive skin?', '2025-03-20 16:00:00'),
-(1007, 7, 'Can you provide the expiration date for the Vitamin D3 supplement?', '2025-03-21 08:30:00'),
-(1008, 1, 'I would like to know if the MacBook Pro 16" comes with an extended warranty option.', '2025-03-22 10:10:00'),
-(1009, 2, 'Is the Bosch Front Load Washer compatible with 220V power supply?', '2025-03-23 13:50:00'),
-(1010, 3, 'Can you provide assembly instructions for the Ikea Malm Bed Frame?', '2025-03-24 15:40:00');
+INSERT INTO contact_seller (customer_id, order_detail_id, contact_reason, seller_id, conversation, created_at) VALUES
+(1001, 1, 'Product Inquiry', 1, 'Customer: I would like to know if the iPhone 14 is available in other colors.\nSeller: Yes, it is available in black, white, and blue.', '2025-03-15 10:00:00'),
+(1002, 9, 'Warranty Inquiry', 2, 'Customer: Can you provide more details about the warranty for the LG InstaView Refrigerator?\nSeller: The warranty covers 1 year for parts and labor.', '2025-03-16 12:30:00'),
+(1003, 11, 'Price Inquiry', 3, 'Customer: Is there a discount available for bulk purchases of Ikea Ektorp Sofa?', '2025-03-17 09:45:00'),
+(1004, 13, 'Delivery Inquiry', 4, 'Customer: I need assistance with the size chart for Zara Summer Dress.\nSeller: Sure, I will email you the size chart shortly.', '2025-03-18 14:20:00'),
+(1005, 15, 'Delivery Inquiry', 5, 'Customer: Can you confirm the delivery timeline for the Peloton Bike?\nSeller: The estimated delivery time is 5-7 business days.', '2025-03-19 11:15:00'),
+(1006, 16, 'Product Inquiry', 6, 'Customer: Is the CeraVe Moisturizing Cream suitable for sensitive skin?\nSeller: Yes, it is dermatologist-tested and suitable for sensitive skin.', '2025-03-20 16:00:00'),
+(1007, 17, 'Product Inquiry', 7, 'Customer: Can you provide the expiration date for the Vitamin D3 supplement?', '2025-03-21 08:30:00'),
+(1008, 20, 'Warranty Inquiry', 1, 'Customer: I would like to know if the MacBook Pro 16" comes with an extended warranty option.\nSeller: Yes, you can purchase an extended warranty for up to 3 years.', '2025-03-22 10:10:00'),
+(1009, 10, 'Product Inquiry', 2, 'Customer: Is the Bosch Front Load Washer compatible with 220V power supply?\nSeller: Yes, it is compatible with both 110V and 220V power supply.', '2025-03-23 13:50:00'),
+(1010, 12, 'Product Inquiry', 3, 'Customer: Can you provide assembly instructions for the Ikea Malm Bed Frame?\nSeller: Sure, I will send you the assembly manual via email.', '2025-03-24 15:40:00');
 
 SELECT * FROM contact_seller;
 
@@ -1519,25 +1677,30 @@ SELECT * FROM seller_review;
 
 -- TODO Trigger: Update prod_review in PRODUCT table on PRODUCT_REVIEW table update
 
-/* Query 10: Get top-rated products with the highest number of reviews
+/* Query 12: Get top-rated products with the highest number of reviews
 @Author: Qurrat Ul Ain
 */
 SELECT 
-    p.prod_id,
-    p.prod_name,
-    AVG(pr.rating) AS avg_rating,
+    p.prod_id, 
+    p.prod_name, 
+    p.prod_brand, 
+    AVG(pr.rating) AS avg_rating, 
     COUNT(pr.p_review_id) AS total_reviews
-FROM 
-    product p
-LEFT JOIN 
-    product_review pr ON p.prod_id = pr.product_id
+FROM product p
+LEFT JOIN product_review pr ON p.prod_id = pr.product_id
+JOIN product_category c ON p.category_id = c.category_id
+WHERE 
+    p.prod_name LIKE '%laptop%' 
+    OR p.prod_descr LIKE '%laptop%'  
+    OR c.category_name LIKE '%laptop%'
+    OR p.category_id = 12
 GROUP BY 
     p.prod_id, p.prod_name
 ORDER BY 
     avg_rating DESC, total_reviews DESC
 LIMIT 5;
 
-/* Query 11: Get unresolved customer service tickets
+/* Query 13: Get unresolved customer service tickets
 @Author: Sai Vishnu Malladi
 */
 SELECT 
@@ -1556,7 +1719,7 @@ WHERE
 ORDER BY 
     cs.created_at ASC;
 
-/* Query 12: Get seller performance
+/* Query 14: Get seller rating
 @Author: Sai Vishnu Malladi
 */
 SELECT 
@@ -1568,9 +1731,8 @@ FROM
     supplier s
 JOIN 
     seller_review sr ON s.supplier_id = sr.seller_id
+WHERE supplier_id = 1
 GROUP BY 
     s.supplier_id, s.supplier_name
 HAVING 
-    total_reviews > 0
-ORDER BY 
-    avg_rating DESC, total_reviews DESC;
+    total_reviews > 0;

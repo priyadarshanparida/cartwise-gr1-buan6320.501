@@ -1,4 +1,3 @@
-
 -- Create a database for the E-commerce company "Cartwise Inc."
 CREATE DATABASE IF NOT EXISTS cartwise;
 -- DROP DATABASE IF EXISTS cartwise;
@@ -220,7 +219,7 @@ CREATE TABLE inventory (
 SELECT 
     i.inventory_id,
     p.prod_name,
-    i.quantity,
+    i.quantity AS stock,
     i.location,
     i.reorder_level
 FROM
@@ -232,6 +231,8 @@ WHERE
 
 -- Query 4: Get inventory details for a specific supplier
 SELECT 
+    i.supplier_id,
+    s.supplier_name,
     i.inventory_id,
     p.prod_name,
     i.quantity AS stock_quantity,
@@ -241,11 +242,14 @@ FROM
     inventory i
 JOIN 
     product p ON i.product_id = p.prod_id
+JOIN
+    supplier s ON i.supplier_id = s.supplier_id
 WHERE 
     i.supplier_id = 1
 ORDER BY 
     p.prod_name;
 
+-- TODO: Implement this by location
 -- Query 5: Get products below reorder level
 SELECT 
     s.supplier_name,
@@ -266,6 +270,8 @@ ORDER BY
 -- Query 6: Get inventory summary by location
 SELECT 
     i.location,
+    p.prod_id,
+    p.prod_name,
     COUNT(i.inventory_id) AS total_products,
     SUM(i.quantity) AS total_stock,
     SUM(i.quantity * p.price) AS total_value
@@ -274,9 +280,7 @@ FROM
 JOIN 
     product p ON i.product_id = p.prod_id
 GROUP BY 
-    i.location
-ORDER BY 
-    total_value DESC;
+    i.location, p.prod_id, p.prod_name;
 
 -- Module 4: Order Processing
 /* Table 7 - SHOPPING CART
@@ -321,9 +325,7 @@ CREATE TABLE order_summary (
             'Processing', 
             'Shipped', 
             'Delivered', 
-            'Cancelled',
-            'Return Initiated',
-            'Refunded'
+            'Cancelled'
         ) NOT NULL,
     shipping_address VARCHAR(255),
     billing_address VARCHAR(255),
@@ -484,10 +486,55 @@ END //
 
 DELIMITER ;
 
+/* Function 3: Calculate refund amount
+@Author: Priyadarshan Parida
+*/
+DELIMITER //
+
+CREATE FUNCTION CalculateRefund(
+    p_pid INT,
+    p_qty INT,
+    p_tax_rate DECIMAL(5, 2)
+) RETURNS DECIMAL(10, 2)
+DETERMINISTIC
+BEGIN
+    DECLARE v_refund DECIMAL(10, 2);
+    DECLARE v_price DECIMAL(10, 2);
+
+    SELECT price
+    INTO v_price
+    FROM product
+    WHERE prod_id = p_pid;
+
+    -- Calculate the refund amount
+    SET v_refund = (v_price * p_qty) * (1 + p_tax_rate / 100);
+    RETURN v_refund;
+END //
+
+DELIMITER ;
+
 -- Test the CalculateTotalAmount function
 SELECT CalculateTotalAmount(1, 6.25) AS total_amount;
 
--- Query 7: Order Summary and Payment Details
+-- Query 7: Get shopping cart details for a specific customer
+SELECT
+    sc.cart_id,
+    c.cid,
+    p.prod_id,
+    p.prod_name,
+    sc.quantity
+FROM
+    shopping_cart sc
+JOIN
+    customer c ON sc.customer_id = c.cid
+JOIN
+    product p ON sc.product_id = p.prod_id
+WHERE
+    c.cid = 1001
+ORDER BY
+    sc.cart_id;
+
+-- Query 8: Order Summary and Payment Details
 SELECT 
     CONCAT(c.fname, ' ', c.lname) AS customer_name,
     c.cid AS customer_id,
@@ -506,24 +553,28 @@ FROM
 JOIN 
     order_summary os ON c.cid = os.customer_id
 JOIN 
-    payment_detail pd ON os.order_id = pd.order_id
-WHERE 
-    os.order_id = 1;
+    payment_detail pd ON os.order_id = pd.order_id;
 
--- Query 8: Display order details with product and shipping information
-SELECT 
-    od.order_id,
+-- Query 9: Display order details with product and shipping information
+SELECT
+    CONCAT(c.fname, ' ', c.lname) AS customer_name,
+    c.cid,
+    os.order_id,
+    od.order_detail_id,
     od.product_id,
     p.prod_name,
     od.quantity,
     od.price,
     s.shipping_method,
     s.shipping_cost,
-    s.shipping_date,
-    s.delivery_date,
+    CAST(s.delivery_date AS DATE) AS expected_delivery_date,
     s.tracking_number
-FROM 
-    order_detail od
+FROM
+    customer c
+JOIN
+    order_summary os ON c.cid = os.customer_id
+JOIN 
+    order_detail od ON os.order_id = od.order_id
 JOIN 
     product p ON od.product_id = p.prod_id
 JOIN 
@@ -531,7 +582,33 @@ JOIN
 WHERE 
     od.order_id = 1;
 
--- Query 9: Get customer order history
+-- Query 10: Display return history for customer
+SELECT
+    c.cid,
+    CONCAT(c.fname, ' ', c.lname) AS customer_name,
+    os.order_id,
+    od.order_detail_id,
+    p.prod_id,
+    p.prod_name,
+    p.price,
+    od.quantity,
+    r.refund_amount,
+    r.return_reason,
+    r.status AS return_status
+FROM
+    customer c
+JOIN
+    order_summary os ON c.cid = os.customer_id
+JOIN
+    order_detail od ON os.order_id = od.order_id
+JOIN
+    product p ON od.product_id = p.prod_id
+JOIN
+    return_refund r ON od.order_detail_id = r.order_detail_id
+WHERE
+    c.cid = 1004;
+
+-- Query 11: Get customer order history
 SELECT 
     os.order_id,
     os.order_date,
@@ -574,35 +651,49 @@ CREATE TABLE product_review (
 /* Table 14 - CUSTOMER_SERVICE
 1. Ticket ID (ticket_id): Unique identifier for each customer service ticket.
 2. Customer ID (customer_id): ID of the customer who raised the ticket.
-3. Issue Description (issue_description): Description of the issue.
-4. Status (status): Status of the ticket (e.g., open, resolved, closed).
-5. Created At (created_at): Timestamp of when the ticket was created.
-6. Updated At (updated_at): Timestamp of the last update to the ticket.
+3. Order Detail ID (order_detail_id): ID of the order detail related to the issue.
+4. Issue Type (issue_type): Type of issue (e.g., Product Issue, Order Issue, Payment Issue, Shipping Issue, Other).
+5. Issue Description (issue_description): Description of the issue.
+6. Conversation (conversation): Conversation history related to the issue.
+7. Status (status): Status of the ticket (e.g., Open, Resolved, Closed).
+8. Created At (created_at): Timestamp of when the ticket was created.
+9. Updated At (updated_at): Timestamp of the last update to the ticket.
 */
+
 CREATE TABLE customer_service (
     ticket_id INT PRIMARY KEY AUTO_INCREMENT,
     customer_id INT,
+    order_detail_id INT,
+    issue_type ENUM('Product Issue', 'Order Issue', 'Payment Issue', 'Shipping Issue', 'Other'),
     issue_description TEXT,
+    conversation TEXT,
     status ENUM('Open', 'Resolved', 'Closed') DEFAULT 'Open',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES customer(cid)
+    FOREIGN KEY (customer_id) REFERENCES customer(cid),
+    FOREIGN KEY (order_detail_id) REFERENCES order_detail(order_detail_id)
 );
 
 /* Table 15 - CONTACT_SELLER
-1. Contact ID (contact_id): Unique identifier for each contact record.
+Purpose: Store customer-seller communication for inquiries and issues.
+1. Issue ID (issue_id): Unique identifier for each contact record.
 2. Customer ID (customer_id): ID of the customer who contacted the seller.
-3. Seller ID (seller_id): ID of the seller being contacted.
-4. Message (message): Message sent by the customer.
-5. Created At (created_at): Timestamp of when the message was sent.
+3. Order Detail ID (order_detail_id): ID of the order detail related to the issue.
+4. Contact Reason (contact_reason): Reason for contacting the seller (e.g., Product Inquiry, Warranty Inquiry, Price Inquiry, Delivery Inquiry, Other).
+5. Seller ID (seller_id): ID of the seller being contacted.
+6. Conversation (conversation): Conversation history between the customer and the seller.
+7. Created At (created_at): Timestamp of when the message was sent.
 */
 CREATE TABLE contact_seller (
     issue_id INT PRIMARY KEY AUTO_INCREMENT,
     customer_id INT,
+    order_detail_id INT,
+    contact_reason ENUM('Product Inquiry', 'Warranty Inquiry', 'Price Inquiry', 'Delivery Inquiry', 'Other'),
     seller_id INT,
-    message TEXT,
+    conversation TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customer(cid),
+    FOREIGN KEY (order_detail_id) REFERENCES order_detail(order_detail_id),
     FOREIGN KEY (seller_id) REFERENCES supplier(supplier_id)
 );
 
@@ -627,24 +718,28 @@ CREATE TABLE seller_review (
 );
 
 -- TODO Trigger: Update prod_review in PRODUCT table on PRODUCT_REVIEW table update
-
--- Query 10: Get top-rated products with the highest number of reviews
+-- Query 12: Get top-rated products with the highest number of reviews
 SELECT 
-    p.prod_id,
-    p.prod_name,
-    AVG(pr.rating) AS avg_rating,
+    p.prod_id, 
+    p.prod_name, 
+    p.prod_brand, 
+    AVG(pr.rating) AS avg_rating, 
     COUNT(pr.p_review_id) AS total_reviews
-FROM 
-    product p
-LEFT JOIN 
-    product_review pr ON p.prod_id = pr.product_id
+FROM product p
+LEFT JOIN product_review pr ON p.prod_id = pr.product_id
+JOIN product_category c ON p.category_id = c.category_id
+WHERE 
+    p.prod_name LIKE '%laptop%' 
+    OR p.prod_descr LIKE '%laptop%'  
+    OR c.category_name LIKE '%laptop%'
+    OR p.category_id = 12
 GROUP BY 
     p.prod_id, p.prod_name
 ORDER BY 
     avg_rating DESC, total_reviews DESC
 LIMIT 5;
 
--- Query 11: Get unresolved customer service tickets
+-- Query 13: Get unresolved customer service tickets
 SELECT 
     cs.ticket_id,
     cs.issue_description,
@@ -661,7 +756,7 @@ WHERE
 ORDER BY 
     cs.created_at ASC;
 
--- Query 12: Get seller performance
+-- Query 14: Get seller rating
 SELECT 
     s.supplier_id AS seller_id,
     s.supplier_name AS seller_name,
@@ -671,9 +766,11 @@ FROM
     supplier s
 JOIN 
     seller_review sr ON s.supplier_id = sr.seller_id
+WHERE supplier_id = 1
 GROUP BY 
     s.supplier_id, s.supplier_name
 HAVING 
-    total_reviews > 0
-ORDER BY 
-    avg_rating DESC, total_reviews DESC;
+    total_reviews > 0;
+
+-- TODO: Look-up table (2-3)
+-- TODO: Security
