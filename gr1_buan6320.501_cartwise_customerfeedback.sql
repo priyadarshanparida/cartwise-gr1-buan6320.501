@@ -25,6 +25,37 @@ INSERT INTO product_review (product_id, customer_id, rating, review_text) VALUES
 (6, 1003, 5, 'Build quality is excellent.'),
 (6, 1004, 4, 'Very expensive but worth it.'),
 (6, 1005, 5, 'Best laptop I have ever used.');
+-- Product 7: Dell XPS 13 (prod_review = 4.6)
+INSERT INTO product_review (product_id, customer_id, rating, review_text) VALUES
+(7, 1001, 5, 'Great laptop for everyday use.'),
+(7, 1002, 4, 'Good performance but a bit heavy.'),
+(7, 1003, 5, 'The display is fantastic.'),
+(7, 1004, 4, 'Battery life could be better.'),
+(7, 1005, 5, 'Highly recommend this laptop.');
+
+-- Product 8: HP Spectre x360 (prod_review = 4.2)
+INSERT INTO product_review (product_id, customer_id, rating, review_text) VALUES
+(8, 1006, 4, 'Good laptop but a bit pricey.'),
+(8, 1007, 5, 'The design is beautiful.'),
+(8, 1008, 4, 'Performance is decent.'),
+(8, 1009, 5, 'Great for students.'),
+(8, 1010, 4, 'Battery life is average.');
+
+-- Product 9: Lenovo ThinkPad X1 Carbon (prod_review = 4.1)
+INSERT INTO product_review (product_id, customer_id, rating, review_text) VALUES
+(9, 1001, 4, 'Good laptop for business use.'),
+(9, 1002, 5, 'The keyboard is excellent.'),
+(9, 1003, 4, 'Performance is good but a bit heavy.'),
+(9, 1004, 5, 'Highly durable and reliable.'),
+(9, 1005, 4, 'Battery life could be improved.');
+
+-- Product 10: Asus ROG Zephyrus G14 (prod_review = 4.4)
+INSERT INTO product_review (product_id, customer_id, rating, review_text) VALUES
+(10, 1006, 5, 'Great gaming laptop.'),
+(10, 1007, 4, 'Performance is top-notch.'),
+(10, 1008, 5, 'The design is sleek.'),
+(10, 1009, 4, 'Battery life could be better.'),
+(10, 1010, 5, 'Highly recommend for gamers.');
 
 -- Product 11: Canon EOS R5 (prod_review = 4.9)
 INSERT INTO product_review (product_id, customer_id, rating, review_text) VALUES
@@ -85,32 +116,32 @@ INSERT INTO product_review (product_id, customer_id, rating, review_text) VALUES
 SELECT * FROM product_review;
 
 -- Insert 14: Insert records into the customer_service table
-INSERT INTO customer_service (customer_id, issue_description, status, created_at, updated_at) VALUES
-(1001, 'Order not delivered on time.', 'Open', '2025-03-15 10:00:00', '2025-03-15 10:00:00'),
-(1002, 'Received a defective product.', 'Resolved', '2025-03-10 12:00:00', '2025-03-12 14:00:00'),
-(1003, 'Refund not processed for returned item.', 'Open', '2025-03-18 09:30:00', '2025-03-18 09:30:00'),
-(1004, 'Incorrect item delivered.', 'Closed', '2025-03-05 11:00:00', '2025-03-07 16:00:00'),
-(1005, 'Unable to apply discount code during checkout.', 'Resolved', '2025-03-08 08:00:00', '2025-03-09 10:00:00'),
-(1006, 'Payment failed but amount deducted.', 'Open', '2025-03-20 14:00:00', '2025-03-20 14:00:00'),
-(1007, 'Need assistance with product installation.', 'Open', '2025-03-19 15:30:00', '2025-03-19 15:30:00'),
-(1008, 'Order canceled without notification.', 'Closed', '2025-03-01 13:00:00', '2025-03-03 17:00:00'),
-(1009, 'Warranty claim for a damaged product.', 'Resolved', '2025-03-11 10:00:00', '2025-03-13 12:00:00'),
-(1010, 'Request to change shipping address.', 'Open', '2025-03-21 09:00:00', '2025-03-21 09:00:00');
+INSERT INTO customer_service (customer_id, order_detail_id, issue_type, issue_description, conversation, status, created_at, updated_at) VALUES
+(1001, 1, 'Shipping Issue', 'Order not delivered on time.', 'Customer: When will my order arrive?\nSupport: We are looking into it.', 'Open', '2025-03-15 10:00:00', '2025-03-15 10:00:00'),
+(1002, 7, 'Product Issue', 'Received a defective product.', 'Customer: The product is not working.\nSupport: We will replace it.', 'Resolved', '2025-03-10 12:00:00', '2025-03-12 14:00:00'),
+(1003, 9, 'Payment Issue', 'Refund not processed for returned item.', 'Customer: I returned the item but no refund yet.\nSupport: Refund will be processed soon.', 'Open', '2025-03-18 09:30:00', '2025-03-18 09:30:00'),
+(1004, 11, 'Order Issue', 'Incorrect item delivered.', 'Customer: I received the wrong item.\nSupport: We will arrange a replacement.', 'Closed', '2025-03-05 11:00:00', '2025-03-07 16:00:00'),
+(1005, 13, 'Order Issue', 'Unable to apply discount code during checkout.', 'Customer: Discount code is not working.\nSupport: Please try again, it should work now.', 'Resolved', '2025-03-08 08:00:00', '2025-03-09 10:00:00'),
+(1006, 15, 'Payment Issue', 'Payment failed but amount deducted.', 'Customer: My payment failed but money was deducted.\nSupport: We are investigating the issue.', 'Open', '2025-03-20 14:00:00', '2025-03-20 14:00:00'),
+(1007, 17, 'Product Issue', 'Need assistance with product installation.', 'Customer: How do I install this product?\nSupport: We will send you the installation guide.', 'Open', '2025-03-19 15:30:00', '2025-03-19 15:30:00'),
+(1008, 19, 'Order Issue', 'Order canceled without notification.', 'Customer: Why was my order canceled?\nSupport: Apologies, it was a system error.', 'Closed', '2025-03-01 13:00:00', '2025-03-03 17:00:00'),
+(1009, 20, 'Product Issue', 'Warranty claim for a damaged product.', 'Customer: My product is damaged, how do I claim warranty?\nSupport: Please provide the purchase details.', 'Resolved', '2025-03-11 10:00:00', '2025-03-13 12:00:00'),
+(1010, 21, 'Shipping Issue', 'Request to change shipping address.', 'Customer: I need to update my shipping address.\nSupport: Address updated successfully.', 'Open', '2025-03-21 09:00:00', '2025-03-21 09:00:00');
 
 SELECT * FROM customer_service;
 
 -- Insert 15: Insert records into the contact_seller table
-INSERT INTO contact_seller (customer_id, seller_id, message, created_at) VALUES
-(1001, 1, 'I would like to know if the iPhone 14 is available in other colors.', '2025-03-15 10:00:00'),
-(1002, 2, 'Can you provide more details about the warranty for the LG InstaView Refrigerator?', '2025-03-16 12:30:00'),
-(1003, 3, 'Is there a discount available for bulk purchases of Ikea Ektorp Sofa?', '2025-03-17 09:45:00'),
-(1004, 4, 'I need assistance with the size chart for Zara Summer Dress.', '2025-03-18 14:20:00'),
-(1005, 5, 'Can you confirm the delivery timeline for the Peloton Bike?', '2025-03-19 11:15:00'),
-(1006, 6, 'Is the CeraVe Moisturizing Cream suitable for sensitive skin?', '2025-03-20 16:00:00'),
-(1007, 7, 'Can you provide the expiration date for the Vitamin D3 supplement?', '2025-03-21 08:30:00'),
-(1008, 1, 'I would like to know if the MacBook Pro 16" comes with an extended warranty option.', '2025-03-22 10:10:00'),
-(1009, 2, 'Is the Bosch Front Load Washer compatible with 220V power supply?', '2025-03-23 13:50:00'),
-(1010, 3, 'Can you provide assembly instructions for the Ikea Malm Bed Frame?', '2025-03-24 15:40:00');
+INSERT INTO contact_seller (customer_id, order_detail_id, contact_reason, seller_id, conversation, created_at) VALUES
+(1001, 1, 'Product Inquiry', 1, 'Customer: I would like to know if the iPhone 14 is available in other colors.\nSeller: Yes, it is available in black, white, and blue.', '2025-03-15 10:00:00'),
+(1002, 9, 'Warranty Inquiry', 2, 'Customer: Can you provide more details about the warranty for the LG InstaView Refrigerator?\nSeller: The warranty covers 1 year for parts and labor.', '2025-03-16 12:30:00'),
+(1003, 11, 'Price Inquiry', 3, 'Customer: Is there a discount available for bulk purchases of Ikea Ektorp Sofa?', '2025-03-17 09:45:00'),
+(1004, 13, 'Delivery Inquiry', 4, 'Customer: I need assistance with the size chart for Zara Summer Dress.\nSeller: Sure, I will email you the size chart shortly.', '2025-03-18 14:20:00'),
+(1005, 15, 'Delivery Inquiry', 5, 'Customer: Can you confirm the delivery timeline for the Peloton Bike?\nSeller: The estimated delivery time is 5-7 business days.', '2025-03-19 11:15:00'),
+(1006, 16, 'Product Inquiry', 6, 'Customer: Is the CeraVe Moisturizing Cream suitable for sensitive skin?\nSeller: Yes, it is dermatologist-tested and suitable for sensitive skin.', '2025-03-20 16:00:00'),
+(1007, 17, 'Product Inquiry', 7, 'Customer: Can you provide the expiration date for the Vitamin D3 supplement?', '2025-03-21 08:30:00'),
+(1008, 20, 'Warranty Inquiry', 1, 'Customer: I would like to know if the MacBook Pro 16" comes with an extended warranty option.\nSeller: Yes, you can purchase an extended warranty for up to 3 years.', '2025-03-22 10:10:00'),
+(1009, 10, 'Product Inquiry', 2, 'Customer: Is the Bosch Front Load Washer compatible with 220V power supply?\nSeller: Yes, it is compatible with both 110V and 220V power supply.', '2025-03-23 13:50:00'),
+(1010, 12, 'Product Inquiry', 3, 'Customer: Can you provide assembly instructions for the Ikea Malm Bed Frame?\nSeller: Sure, I will send you the assembly manual via email.', '2025-03-24 15:40:00');
 
 SELECT * FROM contact_seller;
 
