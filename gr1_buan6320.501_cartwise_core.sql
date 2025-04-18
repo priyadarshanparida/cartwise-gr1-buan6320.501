@@ -75,19 +75,15 @@ Purpose: Store product categories for organizing and browsing products.
 1. Category ID (category_id): Unique identifier for each category.
 2. Category Name (category_name): Name of the category.
 3. Parent Category ID (parent_category_id): ID of the parent category (if applicable).
-4. Description (description): Description of the category.
+4. Category Description (category_description): Description of the category.
 */
 CREATE TABLE product_category (
     category_id INT PRIMARY KEY AUTO_INCREMENT,
     category_name VARCHAR(100) NOT NULL,
     parent_category_id INT,
-    description TEXT,
+    category_description TEXT,
     FOREIGN KEY (parent_category_id) REFERENCES product_category(category_id)
 );
-
-/* Add index to category_name in product_category
- table for improved search performance. */
-CREATE INDEX idx_category_name ON product_category(category_name);
 
 /* Table 4 - PRODUCT
 Purpose: Store product information for listing, searching, and ordering products.
@@ -97,7 +93,6 @@ Purpose: Store product information for listing, searching, and ordering products
 4. Description (prod_descr): Description of the product.
 5. Review (prod_review): Review rating of the product (e.g., 1 to 5).
 6. Price (price): Price of the product.
-7. Stock (stock): Available stock of the product.
 8. Category ID (category_id): ID of the product category.
 9. Created At (created_at): Timestamp of product creation.
 10. Updated At (updated_at): Timestamp of last product update.
@@ -109,19 +104,11 @@ CREATE TABLE product (
     prod_descr TEXT,
     prod_review DECIMAL(2, 1),
     price DECIMAL(10, 2) NOT NULL,
-    stock INT NOT NULL,
     category_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (category_id) REFERENCES product_category(category_id)
 );
-
-/* TODO: Add seller field to the product table for tracking
- suppliers or is there a way to do this with supplier_id? */
-
--- Add indexes to the product table for improved search performance.
-CREATE INDEX idx_product_name ON product(prod_name);
-CREATE INDEX idx_description ON product(prod_descr(255));
 
 /* Query 2: search for products based on keywords in
  product name, description, or category name. */
@@ -131,11 +118,13 @@ SELECT
     p.prod_name,
     p.prod_descr,
     p.price,
-    p.stock
+    i.quantity AS stock,
 FROM 
     product p
 JOIN 
     product_category c ON p.category_id = c.category_id
+JOIN
+    inventory i ON p.prod_id = i.product_id
 WHERE 
     p.prod_name LIKE '%Off-Road%' 
     OR p.prod_descr LIKE '%Off-Road%'  
@@ -215,6 +204,8 @@ CREATE TABLE inventory (
     FOREIGN KEY (supplier_id) REFERENCES supplier(supplier_id)
 );
 
+-- TODO: Create a view with Product and Supplier information
+
 -- Query 3: Get inventory details for a specific product
 SELECT 
     i.inventory_id,
@@ -235,7 +226,7 @@ SELECT
     s.supplier_name,
     i.inventory_id,
     p.prod_name,
-    i.quantity AS stock_quantity,
+    i.quantity AS stock,
     i.location,
     i.reorder_level
 FROM 
@@ -254,7 +245,7 @@ ORDER BY
 SELECT 
     s.supplier_name,
     p.prod_name,
-    i.quantity AS stock_quantity,
+    i.quantity AS stock,
     i.reorder_level
 FROM 
     inventory i

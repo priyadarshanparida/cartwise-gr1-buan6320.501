@@ -33,15 +33,27 @@ Each module name is followed by the list of tables that belong to that module.
 - contact_seller
 - seller_review
 
-**6. Rewards**
+**6. Audit**
+
+- customer_change_log
+- archived_customer
+- login_attempt
+
+**7. Location lookup**
+
+- state_lookup
+- city_lookup
+- zip_lookup
+
+**8. Rewards**
 
 - reward
 
-**7. Product Search and Recommendation:**
+**9. Product Search and Recommendation:**
 
 - product_search (TODO: Implement some kind of ranking later)
 - product_recommendation (TODO: Show this on selection of a product.)
 
-**8. Promotion**
+**10. Promotion**
 
 - promotion
