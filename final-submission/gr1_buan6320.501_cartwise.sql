@@ -1948,7 +1948,7 @@ FROM inventory WHERE product_id = 1;
 SELECT quantity INTO @original_macbook_quantity
 FROM inventory WHERE product_id = 6;
 
--- Execute: Call the ProcessOrder stored procedure
+-- Test: Call the ProcessOrder stored procedure
 -- Declare a variable to hold the output
 SET @order_id = NULL;
 
@@ -2130,7 +2130,7 @@ UPDATE order_summary
 SET order_date = CURDATE() - INTERVAL 5 DAY 
 WHERE order_id = 11;
 
--- Execute
+-- Test
 -- Declare variables to hold the output
 SET @return_id = NULL;
 SET @payment_detail_id = NULL;
@@ -2201,7 +2201,7 @@ SELECT order_status
 INTO @original_status
 FROM order_summary
 WHERE order_id = 1;
--- Execute: Call the stored procedure to update the order status
+-- Test: Call the stored procedure to update the order status
 CALL UpdateOrderStatus(1, 'Shipped');
 -- Verify the updated status in the order_summary table
 SELECT * FROM order_summary WHERE order_id = 1;
@@ -2268,7 +2268,7 @@ SELECT quantity
 INTO @original_quantity
 FROM inventory 
 WHERE product_id = 1;
--- Execute: Call procedure AddProductToInventory
+-- Test: Call procedure AddProductToInventory
 -- This should fail due to foreign key constraint with product and supplier
 -- CALL AddProductToInventory(200, 300, 50, 'Test Warehouse', 10);
 -- This should add 51 units to inventory of product_id = 1
@@ -2316,7 +2316,7 @@ INTO @original_price
 FROM product 
 WHERE product_id = 1;
 
--- Execute: Call the UpdateProductPrice procedure
+-- Test: Call the UpdateProductPrice procedure
 CALL UpdateProductPrice(1, 1099.99);
 -- Verify the updated price
 SELECT * FROM product WHERE product_id = 1;
@@ -2366,7 +2366,7 @@ VALUES
 (@cid, SHA2('password123', 256), '2020-01-01 10:00:00', '2021-01-01 10:00:00', FALSE), -- Inactive, older than 2 years
 (@cid + 1, SHA2('password456', 256), '2020-01-01 10:00:00', '2023-05-01 10:00:00', FALSE), -- Inactive, within 2 years
 (@cid + 2, SHA2('password789', 256), '2020-01-01 10:00:00', '2024-01-01 10:00:00', TRUE);  -- Active, older than 2 years
--- Execute: Call PurgeInactiveLogins
+-- Test: Call PurgeInactiveLogins
 SET SQL_SAFE_UPDATES = 0;
 CALL PurgeInactiveLogins();
 SET SQL_SAFE_UPDATES = 1;
@@ -2606,7 +2606,7 @@ address in the customer_change_log table.
 DELIMITER //
 
 CREATE TRIGGER LogAddressChange
-BEFORE UPDATE ON customer
+AFTER UPDATE ON customer
 FOR EACH ROW
 BEGIN
     -- Log changes to address_line1
