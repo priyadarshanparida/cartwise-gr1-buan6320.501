@@ -533,9 +533,10 @@ CREATE TABLE zip_lookup (
 -- ********************* Step 2: Populate Tables *********************
 -- Module 1. Customer Onboarding
 USE cartwise;
-
--- Insert 1: Insert records into the customer table
--- @Author: Soniya Rajappan
+/*
+Insert 1: Insert records into the customer table
+@Author: Soniya Rajappan
+*/
 INSERT INTO customer (customer_id, first_name, last_name, dob, gender, email, phone, address_line1, address_line2, city, state, zip, country) VALUES
 (1000, 'John', 'Doe', '1985-05-15', 'Male', 'john.doe@example.com', '1234567890', '123 Main St', NULL, 'Dallas', 'TX', '75001', 'USA'),
 (1001, 'Jane', 'Smith', '1990-07-20', 'Female', 'jane.smith@example.com', '9876543210', '456 Elm St', 'Apt 2B', 'Austin', 'TX', '73301', 'USA'),
@@ -554,8 +555,10 @@ INSERT INTO customer (customer_id, first_name, last_name, dob, gender, email, ph
 (1014, 'Alexander', 'Clark', '1983-01-19', 'Male', 'alexander.clark@example.com', '4444567890', '789 Redwood St', NULL, 'Houston', 'TX', '77004', 'USA');
 SELECT * FROM customer;
 
--- Insert 2: Insert records into the login table
--- @Author: Soniya Rajappan
+/*
+Insert 2: Insert records into the login table
+@Author: Soniya Rajappan
+*/
 INSERT INTO login (customer_id, password_hash, registration_date, last_login_status, last_login_date, is_active) VALUES
 (1000, SHA2('password123', 256), '2023-01-01 10:00:00', TRUE, '2025-03-20 15:30:00', TRUE),
 (1001, SHA2('password456', 256), '2023-01-02 11:00:00', TRUE, '2025-03-19 14:20:00', TRUE),
@@ -577,8 +580,10 @@ SELECT * FROM login;
 -- Module 2. Product Onboarding
 USE cartwise;
 
--- Insert 3: Insert records into the product_category table
--- @Author: Sunayana Jana
+/*
+Insert 3: Insert records into the product_category table
+@Author: Sunayana Jana
+*/
 INSERT INTO product_category (category_id, category_name, parent_category_id, category_description) VALUES
 -- Parent Categories
 (1, 'Electronics', NULL, 'Devices and gadgets for everyday use'),
@@ -904,9 +909,10 @@ SELECT * FROM product;
 -- Module 3: Inventory Management
 USE cartwise;
 
--- Insert 5: Insert records into the supplier table
--- @Author: Winnie Manyara
-
+/*
+Insert 5: Insert records into the supplier table
+@Author: Winnie Manyara
+*/
 -- Electronics and Home Appliances
 INSERT INTO supplier (supplier_name, supplier_type, supplier_rating, contact_name, email, phone, address_line1, address_line2, city, state, zip, country) VALUES
 ('Tech Distributors Inc.', 'Distributor', 4.8, 'John Smith', 'john.smith@techdistributors.com', '123-456-7890', '123 Tech Street', NULL, 'Dallas', 'TX', '75201', 'USA'),
@@ -931,9 +937,10 @@ INSERT INTO supplier (supplier_name, supplier_type, supplier_rating, contact_nam
 
 SELECT * FROM supplier;
 
--- Insert 6: Insert records into the inventory table
--- @Author: Winnie Manyara
-
+/*
+Insert 6: Insert records into the inventory table
+@Author: Winnie Manyara
+*/
 -- TODO Insert inventory records for all 200 products.
 
 -- Electronics
@@ -989,8 +996,10 @@ SELECT * FROM inventory;
 -- Module 4: Order Processing
 USE cartwise;
 
--- Insert 7: Insert records into the shopping_cart table
--- @Author: Priyadarshan Parida
+/*
+Insert 7: Insert records into the shopping_cart table
+@Author: Priyadarshan Parida
+*/
 INSERT INTO shopping_cart (customer_id, product_id, quantity) VALUES
 (1001, 1, 2),  -- Customer 1 adds 2 units of iPhone 14
 (1001, 6, 1),  -- Customer 1 adds 1 unit of MacBook Pro 16"
@@ -1009,8 +1018,10 @@ INSERT INTO shopping_cart (customer_id, product_id, quantity) VALUES
 (1008, 150, 4); -- Customer 8 adds 4 units of Body Lotion
 SELECT * FROM shopping_cart;
 
--- Insert 8: Insert records into the order_summary table
--- @Author: Priyadarshan Parida
+/*
+Insert 8: Insert records into the order_summary table
+@Author: Priyadarshan Parida
+*/
 
 -- Order 1: Subtotal = $2430.82, Shipping = $50.00, Taxes = $155.05
 -- Ordered Items: 2 iPhone 14, 5 Pantene Pro-V Shampoo, 3 CeraVe Moisturizing Cream, 2 Levi’s 501 Jeans, 2 Zara Summer Dress, 4 Body Lotion
@@ -1069,8 +1080,10 @@ INSERT INTO order_summary (customer_id, order_date, total_amount, order_status, 
 
 SELECT * FROM order_summary;
 
--- Insert 9: Insert records into the payment_detail table
--- @Author: Priyadarshan Parida
+/*
+Insert 9: Insert records into the payment_detail table
+@Author: Priyadarshan Parida
+*/
 
 -- Order 1: Total = $2635.87
 -- Paid fully with Credit Card
@@ -1130,8 +1143,10 @@ INSERT INTO payment_detail (order_id, payment_method, account_number, amount, pa
 
 SELECT * FROM payment_detail;
 
--- Insert 10: Insert records into the order_detail table
--- @Author: Priyadarshan Parida
+/*
+Insert 10: Insert records into the order_detail table
+@Author: Priyadarshan Parida
+*/
 
 -- Order 1
 INSERT INTO order_detail (order_id, product_id, quantity, price) VALUES
@@ -1191,8 +1206,10 @@ INSERT INTO order_detail (order_id, product_id, quantity, price) VALUES
 
 SELECT * FROM order_detail;
 
--- Insert 11: Insert records into the shipping table
--- @Author: Priyadarshan Parida
+/*
+Insert 11: Insert records into the shipping table
+@Author: Priyadarshan Parida
+*/
 
 -- Order 1: Total Shipping = $50.00
 INSERT INTO shipping (order_detail_id, shipping_method, shipping_cost, shipping_date, delivery_date, tracking_number) VALUES
@@ -1253,9 +1270,10 @@ INSERT INTO shipping (order_detail_id, shipping_method, shipping_cost, shipping_
 
 SELECT * FROM shipping;
 
-
--- Insert 12: Insert records into the return_refund table
--- @Author: Priyadarshan Parida
+/*
+Insert 12: Insert records into the return_refund table
+@Author: Priyadarshan Parida
+*/
 INSERT INTO return_refund (order_detail_id, product_id, return_quantity, return_reason, refund_amount, status) VALUES
 (12, 36, 1, 'Defective', 319.49, 'Refunded'); -- Returning 1 Ikea Malm Bed Frame
 
@@ -1264,8 +1282,10 @@ SELECT * FROM return_refund;
 -- Module 5: Customer Feedback
 USE cartwise;
 
--- Insert 13: Insert records into the product_review table
--- @Author: Qurrat Ul Ain
+/*
+Insert 13: Insert records into the product_review table
+@Author: Qurrat Ul Ain
+*/
 
 -- Product 1: iPhone 14 (product_review = 4.8)
 INSERT INTO product_review (product_id, customer_id, rating, review_text) VALUES
@@ -1380,8 +1400,10 @@ INSERT INTO product_review (product_id, customer_id, rating, review_text) VALUES
 
 SELECT * FROM product_review;
 
--- Insert 14: Insert records into the customer_service table
--- @Author: Qurrat Ul Ain
+/*
+Insert 14: Insert records into the customer_service table
+@Author: Qurrat Ul Ain
+*/
 
 INSERT INTO customer_service (customer_id, order_detail_id, issue_type, issue_description, conversation, status, created_at, updated_at) VALUES
 (1001, 1, 'Shipping Issue', 'Order not delivered on time.', 'Customer: When will my order arrive?\nSupport: We are looking into it.', 'Open', '2025-03-15 10:00:00', '2025-03-15 10:00:00'),
@@ -1397,8 +1419,11 @@ INSERT INTO customer_service (customer_id, order_detail_id, issue_type, issue_de
 
 SELECT * FROM customer_service;
 
--- Insert 15: Insert records into the contact_seller table
--- @Author: Sai Vishnu Malladi
+/*
+Insert 15: Insert records into the contact_seller table
+@Author: Sai Vishnu Malladi
+*/
+
 INSERT INTO contact_seller (customer_id, order_detail_id, contact_reason, seller_id, conversation, created_at) VALUES
 (1001, 1, 'Product Inquiry', 1, 'Customer: I would like to know if the iPhone 14 is available in other colors.\nSeller: Yes, it is available in black, white, and blue.', '2025-03-15 10:00:00'),
 (1002, 9, 'Warranty Inquiry', 2, 'Customer: Can you provide more details about the warranty for the LG InstaView Refrigerator?\nSeller: The warranty covers 1 year for parts and labor.', '2025-03-16 12:30:00'),
@@ -1413,8 +1438,10 @@ INSERT INTO contact_seller (customer_id, order_detail_id, contact_reason, seller
 
 SELECT * FROM contact_seller;
 
--- Insert 16: Insert records into the seller_review table
--- @Author: Sai Vishnu Malladi
+/*
+Insert 16: Insert records into the seller_review table
+@Author: Sai Vishnu Malladi
+*/
 
 -- Seller 1: Tech Distributors Inc. (Average Rating = 4.8)
 INSERT INTO seller_review (seller_id, customer_id, rating, review_text, created_at) VALUES
@@ -1459,14 +1486,24 @@ INSERT INTO seller_review (seller_id, customer_id, rating, review_text, created_
 SELECT * FROM seller_review;
 
 -- Module 7: Location Lookup
--- Insert 20: Insert records into the state_lookup table
+
+/*
+Insert 20: Insert records into the state_lookup table
+@Author: Priyadarshan Parida
+*/
+
 INSERT INTO state_lookup (state_code, state_name) VALUES
 ('TX', 'Texas'),
 ('CA', 'California'),
 ('NY', 'New York'),
 ('FL', 'Florida'),
 ('IL', 'Illinois');
--- Insert 21: Insert records into the city_lookup table
+
+/*
+Insert 21: Insert records into the city_lookup table
+@Author: Priyadarshan Parida
+*/
+
 INSERT INTO city_lookup (city_name, state_code) VALUES
 ('Dallas', 'TX'),
 ('Austin', 'TX'),
@@ -1476,7 +1513,12 @@ INSERT INTO city_lookup (city_name, state_code) VALUES
 ('New York City', 'NY'),
 ('Miami', 'FL'),
 ('Chicago', 'IL');
--- Insert 22: Insert records into the zip_lookup table
+
+/*
+Insert 22: Insert records into the zip_lookup table
+@Author: Priyadarshan Parida
+*/
+
 INSERT INTO zip_lookup (zip_code, city_id) VALUES
 ('75001', 1), -- Dallas
 ('73301', 2), -- Austin
@@ -1527,7 +1569,10 @@ CREATE INDEX idx_product_brand ON product(product_brand);
 
 -- ********************* Step 4: Create Views *********************
 
--- Create a view for Product and Supplier information
+/*
+View 1: Create a view for Product and Supplier information
+@Author: Priyadarshan Parida
+*/
 CREATE VIEW product_supplier_inventory_report AS
 SELECT 
     p.product_id AS ProductID,
@@ -1554,19 +1599,19 @@ ORDER BY
     s.supplier_name, pc.category_name, p.product_name;
 
 -- Query the view to verify the data
-SELECT * FROM product_supplier_inventory_report;
+SELECT * FROM product_supplier_inventory_report LIMIT 5;
 
--- ********************* Stored Programs *********************
+-- ***************************** Stored Programs *****************************
 
 -- ********************* Step 5: Create Stored Fucntions *********************
 
 /* Function 1: Calculate Order Subtotal (before taxes)
+@Author: Soniya Rajappan
 Input Parameters:
 - order_id: Order ID
 Output Parameters:
 - subtotal: Total amount before taxes
 Purpose: Calculate the subtotal for an order
-@Author: Priyadarshan Parida
 */
 DELIMITER //
 
@@ -1593,13 +1638,13 @@ DELIMITER ;
 SELECT CalculateSubtotal(1) AS subtotal;
 
 /* Function 2: Calculate Order Total (after shipping and taxes)
+@Author: Sunayana Jana
 Input Parameters:
 - order_id: Order ID
 - tax_rate: Tax rate to be applied
 Output Parameters:
 - total_amount: Total amount after applying taxes and shipping cost
 Purpose: Calculate the total amount for an order
-@Author: Priyadarshan Parida
 */
 DELIMITER //
 
@@ -1635,6 +1680,7 @@ DELIMITER ;
 SELECT CalculateTotalAmount(1, 6.25) AS total_amount;
 
 /* Function 3: Calculate refund amount
+@Author: Priyadarshan Parida
 Input Parameters:
 - p_pid: Product ID
 - p_qty: Quantity of the product
@@ -1643,7 +1689,6 @@ Output Parameters:
 - v_refund: Refund amount
 Purpose: Calculate the refund amount for a 
 specific product based on its price.
-@Author: Priyadarshan Parida
 */
 DELIMITER //
 
@@ -1673,7 +1718,7 @@ DELIMITER ;
 SELECT CalculateRefund(1, 2, 6.25) AS refund_amount;
 
 /* Function 4: Calculate Average Product Rating
-@Author: Priyadarshan Parida
+@Author: Qurat Ul Ain
 Input Parameters:
 - p_product_id: Product ID
 Output Parameters:
@@ -1705,11 +1750,11 @@ DELIMITER ;
 SELECT CalculateAverageRating(1) AS avg_rating;
 
 /* Function 5: Get Customer Lifetime Value
+@Author: Sai Vishnu Malladi
 Input Parameters:
 - p_customer_id: Customer ID
 Output Parameters:
 - lifetime_value: Customer Lifetime Value (CLV)
-@Author: Priyadarshan Parida
 Purpose: Calculate the total amount a customer has spent across all their orders.
 */
 DELIMITER //
@@ -1738,12 +1783,12 @@ DELIMITER ;
 SELECT GetCustomerLifetimeValue(1001) AS lifetime_value;
 
 /* Function 6: Calculate Inventory Value
+@Author: Winnie Manyara
 Input Parameters:
 - p_product_id: Product ID (NULL for all products)
 Output Parameters:
 - inventory_value: Total value of inventory for the 
 specified product or all products.
-@Author: Priyadarshan Parida
 Purpose: Calculate the total value of inventory 
 for a specific product or all products.
 */
@@ -1829,6 +1874,7 @@ DELIMITER ;
 -- ********************* Step 6: Create Stored Procedures *********************
 
 /* Stored Procedure 1: Process Order
+@Author: Sunayana Jana
 Input Parameters:
 - p_customer_id: Customer ID
 - p_shipping_address: Shipping address
@@ -1838,7 +1884,6 @@ account numbers, and amounts
 - p_tax_rate: Tax rate
 Output Parameters:
 - p_order_id: Order ID of the newly created order
-@Author: Priyadarshan Parida
 */
 
 DELIMITER //
@@ -2157,7 +2202,7 @@ DELETE FROM return_refund WHERE return_id = @return_id;
 DELETE FROM payment_detail WHERE payment_detail_id = @payment_detail_id;
 
 /* Stored Procedure 3: UpdateOrderStatus
-@Author: Priyadarshan Parida
+@Author: Sai Vishnu Malladi
 Purpose: Update the status of an order (e.g., from "Processing" to "Shipped" or "Delivered").
 Input Parameters:
     - p_order_id (INT): The ID of the order to update.
@@ -2211,7 +2256,7 @@ SET order_status = @original_status
 WHERE order_id = 1;
 
 /* Stored Procedure 4: AddProductToInventory
-@Author: Priyadarshan Parida
+@Author: Qurat Ul Ain
 Purpose: Add a new product to the inventory or update the 
 quantity if the product already exists.
 Input Parameters:
@@ -2277,7 +2322,7 @@ CALL AddProductToInventory(1, 1, 51, 'Test Warehouse', 10);
 UPDATE inventory SET quantity = @original_quantity WHERE product_id = 1;
 
 /* Stored Procedure 5: UpdateProductPrice
-@Author: Priyadarshan Parida
+@Author: Soniya Rajappan
 Purpose: Update the price of a product.
 Input Parameters:
     - p_product_id (INT): The ID of the product.
@@ -2326,7 +2371,7 @@ SET price = @original_price
 WHERE product_id = 1;
 
 /* Stored Procedure 6: PurgeInactiveLogins
-@Author: Priyadarshan Parida
+@Author: Winnie Manyara
 Purpose: Remove inactive logins older than 2 years.
 Input Parameters: None.
 Output: Number of rows deleted.
@@ -2483,7 +2528,7 @@ SET supplier_rating = @original_supplier_rating
 WHERE supplier_id = 1;
 
 /* Trigger 3: PreventNegativeInventory
-@Author: Priyadarshan Parida
+@Author: Sunayana Jana
 Purpose: Ensure that the quantity in the inventory 
 table never goes below zero during an update or insert.
 */
@@ -2510,7 +2555,7 @@ DELIMITER ;
 
 
 /* Trigger 4: LogFailedLoginAttempts
-@Author: Priyadarshan Parida
+@Author: Soniya Rajappan
 Purpose: Automatically increment the number_of_failed_attempts
 in the login_attempt table whenever a customer's last_login_status
 is updated to false in the login table.
@@ -2556,7 +2601,7 @@ SET last_login_status = TRUE
 WHERE customer_id = 1001;
 
 /* Trigger 5: LogEmailChange
-@Author: Priyadarshan Parida
+@Author: Sai Vishnu Malladi
 Purpose: Automatically log changes to customer
 email in the customer_change_log table.
 */
@@ -2598,7 +2643,7 @@ SET email = @original_email
 WHERE customer_id = 1001;
 
 /* Trigger 6: LogAddressChange
-@Author: Priyadarshan Parida
+@Author: Qurat Ul Ain
 Purpose: Automatically log changes to customer
 address in the customer_change_log table.
 */
@@ -2688,7 +2733,7 @@ SET address_line1 = @original_address_line1,
 WHERE customer_id = 1001;
 
 /* Trigger 7: ArchiveDeletedCustomer
-@Author: Priyadarshan Parida
+@Author: Winnie Manyara
 Purpose: Archive customer details into the archived_customer table before deletion.
 */
 
